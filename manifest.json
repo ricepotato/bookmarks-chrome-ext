@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "북마크 매니저",
+  "version": "0.1.0",
+  "description": "북마크 바의 즐겨찾기를 목록으로 보고 편집/삭제/추가하고, 도메인을 일괄 변경합니다.",
+  "action": {
+    "default_title": "북마크 관리 열기"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "src/manage/manage.html",
+    "open_in_tab": true
+  },
+  "permissions": ["bookmarks"]
+}
