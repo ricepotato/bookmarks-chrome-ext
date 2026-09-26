@@ -7,7 +7,8 @@
   --accent: #2563eb;
   --danger: #dc2626;
   --danger-bg: #fee2e2;
-  --row-dirty: #fff8e1;
+  --tile-bg: #f7f7f8;
+  --thumb-bg: #e8edf7;
   --input-bg: #ffffff;
 }
 
@@ -20,7 +21,8 @@
     --accent: #60a5fa;
     --danger: #f87171;
     --danger-bg: #3f1d1d;
-    --row-dirty: #3a3320;
+    --tile-bg: #262626;
+    --thumb-bg: #2c3340;
     --input-bg: #2a2a2a;
   }
 }
@@ -206,55 +208,6 @@ button:disabled {
   min-width: 240px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  font-size: 13px;
-}
-
-th {
-  text-align: left;
-  padding: 8px;
-  border-bottom: 2px solid var(--border);
-  color: var(--muted);
-  font-weight: 600;
-}
-
-td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-
-tr.row-dirty {
-  background: var(--row-dirty);
-}
-
-.col-path {
-  width: 140px;
-  color: var(--muted);
-  font-size: 12px;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.col-title input {
-  width: 100%;
-}
-
-.col-url input {
-  width: 100%;
-}
-
-.col-actions {
-  white-space: nowrap;
-  display: flex;
-  gap: 4px;
-}
-
 .empty {
   color: var(--muted);
 }
@@ -320,4 +273,167 @@ tr.row-dirty {
 .dedup-date {
   color: var(--muted);
   white-space: nowrap;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.breadcrumb-item {
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  color: var(--accent);
+}
+
+.breadcrumb-item:disabled {
+  opacity: 1;
+  cursor: default;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.breadcrumb-sep {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--tile-bg);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.tile:hover,
+.tile:focus-within {
+  border-color: var(--accent);
+}
+
+.tile-link,
+.tile-folder {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+button.tile-folder {
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
+button.tile-folder:hover:not(:disabled) {
+  color: inherit;
+}
+
+.tile-thumb {
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--thumb-bg);
+  color: var(--accent);
+  overflow: hidden;
+}
+
+.tile-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile-thumb-letter {
+  font-size: 36px;
+  font-weight: 600;
+}
+
+.tile-body {
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.tile-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-sub {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.tile-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  opacity: 0;
+}
+
+.tile:hover .tile-edit,
+.tile:focus-within .tile-edit {
+  opacity: 1;
+}
+
+.edit-dialog {
+  width: min(480px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 20px;
+}
+
+.edit-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.edit-dialog h2 {
+  margin-top: 0;
+}
+
+.edit-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.edit-dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.spacer {
+  flex: 1;
 }

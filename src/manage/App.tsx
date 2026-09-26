@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FlatBookmark, FolderOption } from "./types";
+import type { BookmarkFolder, FlatBookmark, FolderOption } from "./types";
 import {
+  BOOKMARKS_BAR_ID,
   createBookmark,
+  loadBookmarkFolders,
   loadBookmarksBarFlat,
   loadFolderOptions,
   removeBookmark,
   updateBookmark,
 } from "./bookmarks";
-import BookmarkRow from "./components/BookmarkRow";
+import BookmarkGrid from "./components/BookmarkGrid";
+import BookmarkEditDialog from "./components/BookmarkEditDialog";
 import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
@@ -15,18 +18,23 @@ import DuplicateFinder from "./components/DuplicateFinder";
 export default function App() {
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
   const [folders, setFolders] = useState<FolderOption[]>([]);
+  const [folderTree, setFolderTree] = useState<BookmarkFolder[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState(BOOKMARKS_BAR_ID);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     try {
-      const [flat, folderOpts] = await Promise.all([
+      const [flat, folderOpts, tree] = await Promise.all([
         loadBookmarksBarFlat(),
         loadFolderOptions(),
+        loadBookmarkFolders(),
       ]);
       setBookmarks(flat);
       setFolders(folderOpts);
+      setFolderTree(tree);
       setLoadError(null);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
@@ -51,16 +59,68 @@ export default function App() {
     };
   }, [reload]);
 
-  const filtered = useMemo(() => {
+  const folderById = useMemo(
+    () => new Map(folderTree.map((f) => [f.id, f])),
+    [folderTree],
+  );
+
+  // 보고 있던 폴더가 다른 곳에서 삭제되면 북마크 바로 돌아간다.
+  useEffect(() => {
+    if (
+      currentFolderId !== BOOKMARKS_BAR_ID &&
+      !loading &&
+      !folderById.has(currentFolderId)
+    ) {
+      setCurrentFolderId(BOOKMARKS_BAR_ID);
+    }
+  }, [currentFolderId, folderById, loading]);
+
+  // 폴더별 북마크 수 (하위 폴더에 있는 것까지 포함)
+  const folderCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const b of bookmarks) {
+      let id: string | undefined = b.parentId;
+      while (id && id !== BOOKMARKS_BAR_ID) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+        id = folderById.get(id)?.parentId;
+      }
+    }
+    return counts;
+  }, [bookmarks, folderById]);
+
+  const breadcrumb = useMemo(() => {
+    const chain: BookmarkFolder[] = [];
+    let folder = folderById.get(currentFolderId);
+    while (folder) {
+      chain.unshift(folder);
+      folder = folderById.get(folder.parentId);
+    }
+    return chain;
+  }, [currentFolderId, folderById]);
+
+  const searching = query.trim().length > 0;
+
+  const visibleFolders = useMemo(
+    () =>
+      searching ? [] : folderTree.filter((f) => f.parentId === currentFolderId),
+    [folderTree, currentFolderId, searching],
+  );
+
+  const visibleBookmarks = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return bookmarks;
+    // 검색 중에는 폴더와 관계없이 전체 북마크에서 찾는다.
+    if (!q) return bookmarks.filter((b) => b.parentId === currentFolderId);
     return bookmarks.filter(
       (b) =>
         b.title.toLowerCase().includes(q) ||
         b.url.toLowerCase().includes(q) ||
         b.path.some((p) => p.toLowerCase().includes(q)),
     );
-  }, [bookmarks, query]);
+  }, [bookmarks, query, currentFolderId]);
+
+  const editing = editingId
+    ? bookmarks.find((b) => b.id === editingId)
+    : undefined;
 
   const handleSaveRow = async (
     id: string,
@@ -128,7 +188,9 @@ export default function App() {
           <h2>
             북마크 목록{" "}
             <span className="count">
-              ({filtered.length}/{bookmarks.length})
+              {searching
+                ? `(검색 결과 ${visibleBookmarks.length}/${bookmarks.length})`
+                : `(전체 ${bookmarks.length})`}
             </span>
           </h2>
           <input
@@ -140,33 +202,53 @@ export default function App() {
           />
         </div>
 
+        {!searching && (
+          <nav className="breadcrumb" aria-label="폴더 경로">
+            <button
+              className="breadcrumb-item"
+              onClick={() => setCurrentFolderId(BOOKMARKS_BAR_ID)}
+              disabled={currentFolderId === BOOKMARKS_BAR_ID}
+            >
+              북마크 바
+            </button>
+            {breadcrumb.map((f) => (
+              <span key={f.id}>
+                <span className="breadcrumb-sep">›</span>
+                <button
+                  className="breadcrumb-item"
+                  onClick={() => setCurrentFolderId(f.id)}
+                  disabled={f.id === currentFolderId}
+                >
+                  {f.title || "(이름 없음)"}
+                </button>
+              </span>
+            ))}
+          </nav>
+        )}
+
         {loading ? (
           <p>불러오는 중...</p>
-        ) : filtered.length === 0 ? (
-          <p className="empty">표시할 북마크가 없습니다.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th className="col-path">폴더</th>
-                <th className="col-title">제목</th>
-                <th className="col-url">주소</th>
-                <th className="col-actions">동작</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((b) => (
-                <BookmarkRow
-                  key={b.id}
-                  bookmark={b}
-                  onSave={handleSaveRow}
-                  onDelete={handleDeleteRow}
-                />
-              ))}
-            </tbody>
-          </table>
+          <BookmarkGrid
+            folders={visibleFolders}
+            bookmarks={visibleBookmarks}
+            folderCounts={folderCounts}
+            showPath={searching}
+            onOpenFolder={setCurrentFolderId}
+            onEdit={(b) => setEditingId(b.id)}
+          />
         )}
       </section>
+
+      {editing && (
+        <BookmarkEditDialog
+          key={editing.id}
+          bookmark={editing}
+          onSave={handleSaveRow}
+          onDelete={handleDeleteRow}
+          onClose={() => setEditingId(null)}
+        />
+      )}
     </div>
   );
 }

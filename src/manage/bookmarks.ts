@@ -1,4 +1,4 @@
-import type { FlatBookmark, FolderOption } from "./types";
+import type { BookmarkFolder, FlatBookmark, FolderOption } from "./types";
 
 // Chrome 북마크 트리에서 "북마크 바" 노드의 id는 로케일에 관계없이 항상 "1" 이다.
 export const BOOKMARKS_BAR_ID = "1";
@@ -38,6 +38,31 @@ export async function loadBookmarksBarFlat(): Promise<FlatBookmark[]> {
         });
       } else {
         walk(child, [...path, child.title]);
+      }
+    }
+  };
+
+  walk(barRoot, []);
+  return result;
+}
+
+/** 북마크 바 하위의 모든 폴더(북마크 바 자신은 제외)를 트리 순서대로 수집한다. */
+export async function loadBookmarkFolders(): Promise<BookmarkFolder[]> {
+  const [barRoot] = await chrome.bookmarks.getSubTree(BOOKMARKS_BAR_ID);
+  const result: BookmarkFolder[] = [];
+
+  const walk = (node: chrome.bookmarks.BookmarkTreeNode, path: string[]) => {
+    if (!node.children) return;
+    for (const child of node.children) {
+      if (!child.url) {
+        const childPath = [...path, child.title];
+        result.push({
+          id: child.id,
+          parentId: child.parentId ?? node.id,
+          title: child.title,
+          path: childPath,
+        });
+        walk(child, childPath);
       }
     }
   };
