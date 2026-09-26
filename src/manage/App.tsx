@@ -10,6 +10,7 @@ import {
 import BookmarkRow from "./components/BookmarkRow";
 import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
+import DuplicateFinder from "./components/DuplicateFinder";
 
 export default function App() {
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
@@ -91,6 +92,11 @@ export default function App() {
     await reload();
   };
 
+  const handleDeleteMany = async (ids: string[]) => {
+    await Promise.all(ids.map((id) => removeBookmark(id)));
+    await reload();
+  };
+
   return (
     <div className="app">
       <header>
@@ -111,6 +117,10 @@ export default function App() {
 
       <section>
         <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
+      </section>
+
+      <section>
+        <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
       </section>
 
       <section>

@@ -20,6 +20,7 @@ export async function loadBookmarksBarFlat(): Promise<FlatBookmark[]> {
           parentId: node.parentId ?? BOOKMARKS_BAR_ID,
           title: node.title,
           url: node.url,
+          dateAdded: node.dateAdded,
           path,
         });
       }
@@ -32,6 +33,7 @@ export async function loadBookmarksBarFlat(): Promise<FlatBookmark[]> {
           parentId: child.parentId ?? node.id,
           title: child.title,
           url: child.url,
+          dateAdded: child.dateAdded,
           path,
         });
       } else {
@@ -83,6 +85,41 @@ export async function createBookmark(params: {
   url: string;
 }): Promise<void> {
   await chrome.bookmarks.create(params);
+}
+
+/**
+ * 중복 판정용 URL 키. 스킴/호스트 대소문자 차이와 끝의 "/" 유무는 같은 주소로 본다.
+ * (예: "HTTPS://Example.com/" 와 "https://example.com" 은 같은 키)
+ */
+export function normalizeUrlForDedup(url: string): string {
+  let key: string;
+  try {
+    key = new URL(url).href;
+  } catch {
+    key = url.trim();
+  }
+  return key.endsWith("/") ? key.slice(0, -1) : key;
+}
+
+/**
+ * 같은 주소를 가진 북마크들을 그룹으로 묶는다 (2개 이상인 그룹만 반환).
+ * 각 그룹은 추가된 시각이 오래된 순으로 정렬된다.
+ */
+export function findDuplicateGroups(bookmarks: FlatBookmark[]): FlatBookmark[][] {
+  const groups = new Map<string, FlatBookmark[]>();
+  for (const b of bookmarks) {
+    const key = normalizeUrlForDedup(b.url);
+    const group = groups.get(key);
+    if (group) group.push(b);
+    else groups.set(key, [b]);
+  }
+  return [...groups.values()]
+    .filter((g) => g.length > 1)
+    .map((g) =>
+      [...g].sort(
+        (a, b) => (a.dateAdded ?? Infinity) - (b.dateAdded ?? Infinity),
+      ),
+    );
 }
 
 /** URL에서 호스트네임을 추출한다. 파싱 실패 시 null. */

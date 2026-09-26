@@ -258,3 +258,66 @@ tr.row-dirty {
 .empty {
   color: var(--muted);
 }
+
+.dedup-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.dedup-toolbar > span {
+  margin-right: auto;
+}
+
+.dedup-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dedup-group {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.dedup-group-url {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dedup-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dedup-group li label {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dedup-path {
+  flex: 1;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dedup-date {
+  color: var(--muted);
+  white-space: nowrap;
+}
