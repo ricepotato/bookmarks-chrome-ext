@@ -455,3 +455,25 @@ button.tile-folder:hover:not(:disabled) {
   object-fit: contain;
   display: block;
 }
+
+.drive-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.drive-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.drive-row a {
+  color: var(--accent);
+  padding: 6px 0;
+}

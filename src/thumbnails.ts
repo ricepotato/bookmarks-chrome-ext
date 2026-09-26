@@ -18,6 +18,8 @@ export interface ThumbnailRecord {
   blob: Blob;
   /** 캡처 시각 (epoch ms) */
   capturedAt: number;
+  /** Google Drive에 마지막으로 업로드한 시각 (epoch ms). 올린 적 없으면 undefined */
+  driveSyncedAt?: number;
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;

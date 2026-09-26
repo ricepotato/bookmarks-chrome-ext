@@ -28,6 +28,27 @@ npm run dev
 `chrome://extensions`에서 새로고침 버튼을 누르면 반영됩니다
 (HMR로 대부분 자동 반영되지만 background/manifest 변경 시에는 수동 새로고침이 필요할 수 있습니다).
 
+## Google Drive 백업 설정 (선택)
+
+썸네일을 내 Google Drive의 지정한 폴더에도 저장하려면 OAuth 클라이언트 ID가 필요합니다.
+Firebase 같은 별도 인증 서비스는 필요 없고, Chrome의 `chrome.identity` API로 로그인합니다.
+권한 범위는 `drive.file`이라 이 확장이 만든 폴더/파일에만 접근할 수 있습니다.
+
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트를 만들고
+   **API 및 서비스 > 라이브러리**에서 **Google Drive API**를 사용 설정
+2. **OAuth 동의 화면** 구성: 사용자 유형 "외부", 게시 상태는 "테스트"로 두고
+   **테스트 사용자**에 본인 Google 계정 추가
+3. **사용자 인증 정보 > 사용자 인증 정보 만들기 > OAuth 클라이언트 ID**
+   - 애플리케이션 유형: **Chrome 확장 프로그램**
+   - 항목 ID: `chrome://extensions`에 표시되는 이 확장의 ID
+     (압축해제 로드 시 ID는 `dist` 폴더 경로로 정해지므로 폴더를 옮기면 바뀜)
+4. `.env.example`을 `.env.local`로 복사하고 `GOOGLE_OAUTH_CLIENT_ID`에 발급받은 ID 입력
+5. `npm run build` 후 `chrome://extensions`에서 새로고침
+6. 관리 페이지의 **Google Drive 백업**에서 로그인 → 이후 캡처되는 썸네일이 자동 업로드됨.
+   이미 저장된 썸네일은 "기존 썸네일 전체 업로드"로 올릴 수 있음
+
+로그인은 Chrome 프로필에 로그인된 Google 계정을 사용합니다.
+
 ## 기능
 
 - **목록**: 북마크 바의 폴더와 북마크를 바둑판(타일) 형태로 표시. 폴더를 클릭하면 그 폴더 안의

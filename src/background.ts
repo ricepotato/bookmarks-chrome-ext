@@ -5,6 +5,7 @@ import {
   putThumbnail,
   type ThumbnailUpdatedMessage,
 } from "./thumbnails";
+import { syncThumbnailToDrive } from "./drive";
 
 // 서비스 워커: 확장 아이콘 클릭 시 관리 페이지를 새 탭으로 연다.
 // action.default_popup을 지정하지 않았기 때문에 onClicked가 정상적으로 동작한다.
@@ -151,11 +152,18 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
   const capturedAt = Date.now();
 
   for (const key of visit.keys) {
-    await putThumbnail(key, { blob, capturedAt });
+    const record = { blob, capturedAt };
+    await putThumbnail(key, record);
     console.log("[thumbnail] 저장 완료:", key, "←", current.url);
     const message: ThumbnailUpdatedMessage = { type: THUMBNAIL_UPDATED, key };
     // 관리 페이지가 열려 있지 않으면 받는 쪽이 없어 실패하므로 무시한다.
     chrome.runtime.sendMessage(message).catch(() => {});
+
+    // Drive 백업이 켜져 있으면 업로드한다. 실패해도 로컬 썸네일은 유지되고,
+    // 관리 페이지의 "전체 업로드"로 나중에 다시 올릴 수 있다.
+    syncThumbnailToDrive(key, record)
+      .then((ok) => ok && console.log("[drive] 업로드 완료:", key))
+      .catch((e) => console.warn("[drive] 업로드 실패:", key, e));
   }
 
   // 한 번 찍은 뒤에는 같은 탭에서 사이트 안을 돌아다닌 화면이 북마크 썸네일을
