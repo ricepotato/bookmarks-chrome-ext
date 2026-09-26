@@ -13,7 +13,7 @@ interface Props {
 }
 
 /** 마우스를 잠깐 올려두었을 때만 크게 보여주기 위한 지연 시간 */
-const PREVIEW_DELAY_MS = 300;
+const PREVIEW_DELAY_MS = 1000;
 
 export default function BookmarkTile({
   bookmark,
