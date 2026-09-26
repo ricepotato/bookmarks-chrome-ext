@@ -437,3 +437,21 @@ button.tile-folder:hover:not(:disabled) {
 .spacer {
   flex: 1;
 }
+
+.thumb-preview {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.thumb-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

@@ -14,6 +14,7 @@ import BookmarkEditDialog from "./components/BookmarkEditDialog";
 import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
+import { useThumbnails } from "./useThumbnails";
 
 export default function App() {
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
@@ -21,6 +22,7 @@ export default function App() {
   const [folderTree, setFolderTree] = useState<BookmarkFolder[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState(BOOKMARKS_BAR_ID);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const thumbnails = useThumbnails();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -233,6 +235,7 @@ export default function App() {
             folders={visibleFolders}
             bookmarks={visibleBookmarks}
             folderCounts={folderCounts}
+            thumbnails={thumbnails}
             showPath={searching}
             onOpenFolder={setCurrentFolderId}
             onEdit={(b) => setEditingId(b.id)}

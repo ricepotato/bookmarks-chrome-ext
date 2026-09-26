@@ -14,5 +14,6 @@
     "page": "src/manage/manage.html",
     "open_in_tab": true
   },
-  "permissions": ["bookmarks"]
+  "permissions": ["bookmarks", "unlimitedStorage"],
+  "host_permissions": ["<all_urls>"]
 }

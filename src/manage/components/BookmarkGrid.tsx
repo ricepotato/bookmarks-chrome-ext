@@ -1,4 +1,5 @@
 import type { BookmarkFolder, FlatBookmark } from "../types";
+import { normalizeUrlForDedup } from "../bookmarks";
 import BookmarkTile from "./BookmarkTile";
 
 interface Props {
@@ -6,6 +7,8 @@ interface Props {
   bookmarks: FlatBookmark[];
   /** 폴더별 하위 북마크 수 (하위 폴더 포함) */
   folderCounts: Map<string, number>;
+  /** 썸네일 키(normalizeUrlForDedup) → 이미지 URL */
+  thumbnails: Map<string, string>;
   showPath?: boolean;
   onOpenFolder: (id: string) => void;
   onEdit: (bookmark: FlatBookmark) => void;
@@ -15,6 +18,7 @@ export default function BookmarkGrid({
   folders,
   bookmarks,
   folderCounts,
+  thumbnails,
   showPath,
   onOpenFolder,
   onEdit,
@@ -47,7 +51,13 @@ export default function BookmarkGrid({
         </button>
       ))}
       {bookmarks.map((b) => (
-        <BookmarkTile key={b.id} bookmark={b} showPath={showPath} onEdit={onEdit} />
+        <BookmarkTile
+          key={b.id}
+          bookmark={b}
+          thumbnailUrl={thumbnails.get(normalizeUrlForDedup(b.url))}
+          showPath={showPath}
+          onEdit={onEdit}
+        />
       ))}
     </div>
   );
