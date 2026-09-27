@@ -1,20 +1,22 @@
 // content script: 캡처 대상 사이트 중 "즐겨찾기 추가 버튼"을 켠 사이트에서
-// 화면 모서리에 버튼을 띄운다. 버튼을 누르면 저장할 폴더를 고르는 작은 창이 뜬다.
+// 화면 모서리에 버튼을 띄운다. "즐겨찾기에 추가"를 누르면 저장할 폴더를 고르는 작은
+// 창이 뜨고, "캡처"는 이미 북마크된 페이지일 때만 눌러서 썸네일을 새로 찍을 수 있다.
 // 페이지의 CSS와 섞이지 않도록 Shadow DOM 안에 그린다.
 
 import {
   ADD_CURRENT_PAGE_BOOKMARK,
   CAPTURE_SITES_KEY,
   GET_BOOKMARK_FOLDERS,
+  IS_PAGE_BOOKMARKED,
+  RECAPTURE_CURRENT_PAGE,
   findCaptureSite,
   getCaptureSites,
   parseCaptureSites,
-  type AddCurrentPageBookmarkMessage,
   type AddCurrentPageBookmarkResult,
   type BookmarkMessageResponse,
   type ButtonPosition,
   type CaptureSite,
-  type GetBookmarkFoldersMessage,
+  type ContentMessage,
 } from "./captureSites";
 import type { FolderOption } from "./manage/types";
 
@@ -48,7 +50,21 @@ const STYLE = `
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     opacity: 0.85;
   }
-  .fab:hover { opacity: 1; }
+  .fab:hover:not(:disabled) { opacity: 1; }
+  .fab:disabled { background: #6e7781; opacity: 0.6; }
+  .fabs { display: flex; gap: 6px; }
+  .top-right .fabs, .bottom-right .fabs { justify-content: flex-end; }
+  .toast {
+    position: absolute;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #1f2328;
+    color: #fff;
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  }
+  .toast.error { background: #cf222e; }
   .panel {
     position: absolute;
     width: 300px;
@@ -62,10 +78,10 @@ const STYLE = `
     flex-direction: column;
     gap: 8px;
   }
-  .top-left .panel, .top-right .panel { top: calc(100% + 8px); }
-  .bottom-left .panel, .bottom-right .panel { bottom: calc(100% + 8px); }
-  .top-left .panel, .bottom-left .panel { left: 0; }
-  .top-right .panel, .bottom-right .panel { right: 0; }
+  .top-left :is(.panel, .toast), .top-right :is(.panel, .toast) { top: calc(100% + 8px); }
+  .bottom-left :is(.panel, .toast), .bottom-right :is(.panel, .toast) { bottom: calc(100% + 8px); }
+  .top-left :is(.panel, .toast), .bottom-left :is(.panel, .toast) { left: 0; }
+  .top-right :is(.panel, .toast), .bottom-right :is(.panel, .toast) { right: 0; }
   .panel strong { font-size: 14px; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #59636e; }
   input, select {
@@ -90,9 +106,7 @@ const STYLE = `
   }
 `;
 
-function sendMessage<T>(
-  message: GetBookmarkFoldersMessage | AddCurrentPageBookmarkMessage,
-): Promise<T> {
+function sendMessage<T>(message: ContentMessage): Promise<T> {
   return chrome.runtime
     .sendMessage(message)
     .then((res: BookmarkMessageResponse<T> | undefined) => {
@@ -133,7 +147,12 @@ function renderButton(position: ButtonPosition) {
     textContent: "★ 즐겨찾기에 추가",
     title: "현재 사이트를 즐겨찾기에 추가",
   });
-  root.append(fab);
+  const captureButton = el("button", {
+    className: "fab",
+    textContent: "캡처",
+    disabled: true,
+  });
+  root.append(el("div", { className: "fabs" }, fab, captureButton));
   shadow.append(el("style", { textContent: STYLE }), root);
   document.documentElement.append(host);
   listeners = new AbortController();
@@ -145,13 +164,64 @@ function renderButton(position: ButtonPosition) {
     panel = null;
   };
 
+  let toast: HTMLElement | null = null;
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  const showToast = (text: string, isError = false) => {
+    toast?.remove();
+    clearTimeout(toastTimer);
+    toast = el("div", { className: isError ? "toast error" : "toast", textContent: text });
+    root.append(toast);
+    toastTimer = setTimeout(() => toast?.remove(), isError ? 4000 : 2000);
+  };
+
+  // "캡처"는 현재 주소가 북마크되어 있을 때만 누를 수 있다. 다른 곳에서 북마크를
+  // 추가/삭제하거나 SPA에서 주소가 바뀔 수 있으므로 필요할 때마다 다시 확인한다.
+  const refreshBookmarked = async () => {
+    let bookmarked = false;
+    try {
+      bookmarked = await sendMessage<boolean>({ type: IS_PAGE_BOOKMARKED, url: location.href });
+    } catch {
+      // 확장이 업데이트되어 연결이 끊긴 경우 등. 누를 수 없는 상태로 둔다.
+    }
+    captureButton.disabled = !bookmarked;
+    captureButton.title = bookmarked
+      ? "현재 화면을 캡처해 이 북마크의 썸네일을 교체"
+      : "즐겨찾기에 추가된 페이지에서만 사용할 수 있습니다";
+  };
+  refreshBookmarked();
+  root.addEventListener("mouseenter", refreshBookmarked);
+  window.addEventListener("popstate", refreshBookmarked, { signal });
+  window.addEventListener("hashchange", refreshBookmarked, { signal });
+  document.addEventListener(
+    "visibilitychange",
+    () => document.visibilityState === "visible" && refreshBookmarked(),
+    { signal },
+  );
+
   fab.addEventListener("click", () => {
     if (panel) {
       closePanel();
       return;
     }
-    panel = buildPanel(closePanel);
+    panel = buildPanel(closePanel, refreshBookmarked);
     root.append(panel);
+  });
+
+  captureButton.addEventListener("click", async () => {
+    closePanel();
+    toast?.remove();
+    captureButton.disabled = true;
+    await hideWhileCapturing(true);
+    try {
+      await sendMessage<void>({ type: RECAPTURE_CURRENT_PAGE, url: location.href });
+      await hideWhileCapturing(false);
+      showToast("화면을 캡처해 썸네일을 교체했습니다.");
+    } catch (e) {
+      await hideWhileCapturing(false);
+      showToast(`캡처하지 못했습니다: ${e instanceof Error ? e.message : e}`, true);
+    } finally {
+      refreshBookmarked();
+    }
   });
 
   // 창 바깥을 누르거나 Esc를 누르면 닫는다. (closed shadow라 composedPath로 판별)
@@ -171,7 +241,7 @@ function renderButton(position: ButtonPosition) {
   );
 }
 
-function buildPanel(close: () => void): HTMLElement {
+function buildPanel(close: () => void, onAdded: () => void): HTMLElement {
   const titleInput = el("input", { type: "text", value: document.title || location.href });
   const folderSelect = el("select", { disabled: true });
   folderSelect.append(el("option", { textContent: "폴더 불러오는 중..." }));
@@ -209,6 +279,7 @@ function buildPanel(close: () => void): HTMLElement {
         url: location.href,
       });
       const folder = folderSelect.selectedOptions[0]?.textContent ?? "";
+      onAdded();
       if (result.captured) {
         setStatus(`"${folder}"에 추가하고 화면을 저장했습니다.`);
         setTimeout(close, 1200);

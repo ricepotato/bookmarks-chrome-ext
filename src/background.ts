@@ -14,12 +14,14 @@ import { syncThumbnailToDrive } from "./drive";
 import {
   ADD_CURRENT_PAGE_BOOKMARK,
   GET_BOOKMARK_FOLDERS,
+  IS_PAGE_BOOKMARKED,
+  RECAPTURE_CURRENT_PAGE,
   getCaptureSites,
   isCaptureTarget,
   type AddCurrentPageBookmarkMessage,
   type AddCurrentPageBookmarkResult,
   type BookmarkMessageResponse,
-  type GetBookmarkFoldersMessage,
+  type ContentMessage,
 } from "./captureSites";
 
 // 서비스 워커: 확장 아이콘 클릭 시 관리 페이지를 새 탭으로 연다.
@@ -29,10 +31,11 @@ chrome.action.onClicked.addListener(() => {
 });
 
 // ---- "현재 사이트 즐겨찾기에 추가하기" 버튼 ----
-// content script는 chrome.bookmarks를 쓸 수 없으므로 폴더 목록 조회와 북마크 추가를 대신한다.
+// content script는 chrome.bookmarks를 쓸 수 없으므로 폴더 목록 조회, 북마크 여부 확인,
+// 북마크 추가, 화면 다시 캡처를 대신한다.
 chrome.runtime.onMessage.addListener(
   (
-    message: GetBookmarkFoldersMessage | AddCurrentPageBookmarkMessage,
+    message: ContentMessage,
     sender,
     sendResponse: (response: BookmarkMessageResponse<unknown>) => void,
   ) => {
@@ -41,6 +44,10 @@ chrome.runtime.onMessage.addListener(
       task = loadFolderOptions();
     } else if (message?.type === ADD_CURRENT_PAGE_BOOKMARK) {
       task = addPageBookmark(message, sender.tab);
+    } else if (message?.type === IS_PAGE_BOOKMARKED) {
+      task = bookmarkKeyFor(message.url).then((key) => key !== null);
+    } else if (message?.type === RECAPTURE_CURRENT_PAGE) {
+      task = recapturePage(message.url, sender.tab);
     } else {
       return false;
     }
@@ -72,6 +79,18 @@ async function addPageBookmark(
     console.warn("[thumbnail] 즐겨찾기 추가 중 캡처 실패:", e);
     return { captured: false, captureError: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/**
+ * "캡처" 버튼: 북마크된 페이지의 지금 화면을 찍어 기존 썸네일을 교체한다.
+ * 같은 키로 저장하므로 로컬 썸네일은 덮어쓰고, Drive 백업도 같은 파일을 덮어쓴다.
+ */
+async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Promise<void> {
+  const key = await bookmarkKeyFor(url);
+  if (!key) throw new Error("즐겨찾기에 추가된 페이지가 아닙니다.");
+  if (!tab?.id) throw new Error("탭 정보를 알 수 없습니다.");
+  const blob = await captureTab(tab.windowId);
+  await saveThumbnail([key], blob, url);
 }
 
 // ---- 썸네일 자동 캡처 ----

@@ -82,6 +82,8 @@ export function isCaptureTarget(url: string, sites: CaptureSite[]): boolean {
 
 export const GET_BOOKMARK_FOLDERS = "get-bookmark-folders";
 export const ADD_CURRENT_PAGE_BOOKMARK = "add-current-page-bookmark";
+export const IS_PAGE_BOOKMARKED = "is-page-bookmarked";
+export const RECAPTURE_CURRENT_PAGE = "recapture-current-page";
 
 export interface GetBookmarkFoldersMessage {
   type: typeof GET_BOOKMARK_FOLDERS;
@@ -93,6 +95,24 @@ export interface AddCurrentPageBookmarkMessage {
   title: string;
   url: string;
 }
+
+/** 주소가 북마크 바(하위 폴더 포함)에 북마크되어 있는지 묻는다. 응답은 boolean */
+export interface IsPageBookmarkedMessage {
+  type: typeof IS_PAGE_BOOKMARKED;
+  url: string;
+}
+
+/** 북마크된 페이지의 지금 화면을 다시 찍어 기존 썸네일을 교체한다. */
+export interface RecaptureCurrentPageMessage {
+  type: typeof RECAPTURE_CURRENT_PAGE;
+  url: string;
+}
+
+export type ContentMessage =
+  | GetBookmarkFoldersMessage
+  | AddCurrentPageBookmarkMessage
+  | IsPageBookmarkedMessage
+  | RecaptureCurrentPageMessage;
 
 export interface AddCurrentPageBookmarkResult {
   /** 북마크와 함께 화면을 캡처해 썸네일로 저장했는지 */
