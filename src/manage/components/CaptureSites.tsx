@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import {
+  ALL_SITES_BUTTON_POSITION,
   BUTTON_POSITIONS,
+  CAPTURE_ALL_SITES_KEY,
   CAPTURE_SITES_KEY,
+  getCaptureAllSites,
   getCaptureSites,
   newCaptureSite,
   normalizeSiteInput,
   parseCaptureSites,
+  setCaptureAllSites,
   setCaptureSites,
   type ButtonPosition,
   type CaptureSite,
@@ -13,15 +17,20 @@ import {
 
 export default function CaptureSites() {
   const [sites, setSites] = useState<CaptureSite[] | null>(null);
+  const [allSites, setAllSites] = useState(false);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getCaptureSites().then(setSites);
+    getCaptureAllSites().then(setAllSites);
     // 다른 관리 페이지 탭에서 목록을 바꿔도 반영한다.
     const handleChange = (changes: Record<string, chrome.storage.StorageChange>) => {
       if (changes[CAPTURE_SITES_KEY]) {
         setSites(parseCaptureSites(changes[CAPTURE_SITES_KEY].newValue));
+      }
+      if (changes[CAPTURE_ALL_SITES_KEY]) {
+        setAllSites(changes[CAPTURE_ALL_SITES_KEY].newValue === true);
       }
     };
     chrome.storage.local.onChanged.addListener(handleChange);
@@ -61,6 +70,20 @@ export default function CaptureSites() {
     save(sites.filter((s) => s.domain !== domain));
   };
 
+  const handleAllSitesChange = async (checked: boolean) => {
+    setError(null);
+    try {
+      await setCaptureAllSites(checked);
+      setAllSites(checked);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const allSitesPositionLabel = BUTTON_POSITIONS.find(
+    (p) => p.value === ALL_SITES_BUTTON_POSITION,
+  )?.label;
+
   const handleUpdate = (domain: string, changes: Partial<CaptureSite>) => {
     if (!sites) return;
     save(sites.map((s) => (s.domain === domain ? { ...s, ...changes } : s)));
@@ -80,6 +103,20 @@ export default function CaptureSites() {
         폴더를 골라 현재 페이지를 추가할 수 있습니다.
       </p>
 
+      <label className="capture-all-sites">
+        <input
+          type="checkbox"
+          checked={allSites}
+          onChange={(e) => handleAllSitesChange(e.target.checked)}
+        />
+        모든 사이트
+      </label>
+      <p className="hint">
+        켜면 목록에 없는 사이트도 모두 캡처하고, 그 사이트들에는 {allSitesPositionLabel}에
+        버튼이 나타납니다. 아래 목록에 등록한 사이트는 각자의 설정(버튼 표시 여부와 위치)을
+        그대로 따릅니다.
+      </p>
+
       <form className="drive-row" onSubmit={handleAdd}>
         <label>
           도메인 또는 주소
@@ -96,7 +133,11 @@ export default function CaptureSites() {
       </form>
 
       {sites.length === 0 ? (
-        <p className="hint">등록된 사이트가 없어 현재 어떤 사이트도 캡처하지 않습니다.</p>
+        <p className="hint">
+          {allSites
+            ? "등록된 사이트가 없습니다. 모든 사이트를 캡처합니다."
+            : "등록된 사이트가 없어 현재 어떤 사이트도 캡처하지 않습니다."}
+        </p>
       ) : (
         <ul className="capture-site-list">
           {sites.map((site) => (

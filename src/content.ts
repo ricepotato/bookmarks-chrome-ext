@@ -5,11 +5,13 @@
 
 import {
   ADD_CURRENT_PAGE_BOOKMARK,
+  CAPTURE_ALL_SITES_KEY,
   CAPTURE_SITES_KEY,
   GET_BOOKMARK_FOLDERS,
   IS_PAGE_BOOKMARKED,
   RECAPTURE_CURRENT_PAGE,
-  findCaptureSite,
+  buttonPositionFor,
+  getCaptureAllSites,
   getCaptureSites,
   parseCaptureSites,
   type AddCurrentPageBookmarkResult,
@@ -322,10 +324,10 @@ async function hideWhileCapturing(hidden: boolean) {
 }
 
 let currentPosition: ButtonPosition | null = null;
+let settings: { sites: CaptureSite[]; allSites: boolean } = { sites: [], allSites: false };
 
-function apply(sites: CaptureSite[]) {
-  const site = findCaptureSite(location.href, sites);
-  const position = site?.showAddButton ? site.buttonPosition : null;
+function apply() {
+  const position = buttonPositionFor(location.href, settings.sites, settings.allSites);
   if (position === currentPosition) return;
   currentPosition = position;
   if (position) renderButton(position);
@@ -333,11 +335,18 @@ function apply(sites: CaptureSite[]) {
 }
 
 if (/^https?:$/.test(location.protocol)) {
-  getCaptureSites().then(apply);
+  Promise.all([getCaptureSites(), getCaptureAllSites()]).then(([sites, allSites]) => {
+    settings = { sites, allSites };
+    apply();
+  });
   // 관리 페이지에서 설정을 바꾸면 열려 있는 페이지에도 바로 반영한다.
   chrome.storage.local.onChanged.addListener((changes) => {
     if (changes[CAPTURE_SITES_KEY]) {
-      apply(parseCaptureSites(changes[CAPTURE_SITES_KEY].newValue));
+      settings = { ...settings, sites: parseCaptureSites(changes[CAPTURE_SITES_KEY].newValue) };
     }
+    if (changes[CAPTURE_ALL_SITES_KEY]) {
+      settings = { ...settings, allSites: changes[CAPTURE_ALL_SITES_KEY].newValue === true };
+    }
+    if (changes[CAPTURE_SITES_KEY] || changes[CAPTURE_ALL_SITES_KEY]) apply();
   });
 }

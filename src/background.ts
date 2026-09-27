@@ -16,6 +16,7 @@ import {
   GET_BOOKMARK_FOLDERS,
   IS_PAGE_BOOKMARKED,
   RECAPTURE_CURRENT_PAGE,
+  getCaptureAllSites,
   getCaptureSites,
   isCaptureTarget,
   type AddCurrentPageBookmarkMessage,
@@ -96,6 +97,7 @@ async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Pro
 // ---- 썸네일 자동 캡처 ----
 // 북마크된 사이트의 로딩이 끝나면 화면을 캡처해 썸네일로 저장한다.
 // 단, 관리 페이지의 "미리보기 설정" 목록에 있는 도메인의 북마크만 찍는다.
+// ("모든 사이트"를 켜면 모든 북마크를 찍는다.)
 // captureVisibleTab은 창에 "보이는" 탭만 찍을 수 있으므로, 백그라운드에서 로드된 탭은
 // 사용자가 그 탭으로 전환했을 때 찍는다.
 //
@@ -211,10 +213,10 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
     return;
   }
 
-  // 캡처 대상 사이트 목록에 있는 북마크만 찍는다. 목록은 관리 페이지에서 언제든
-  // 바뀔 수 있으므로 방문 기록 시점이 아니라 캡처 직전에 확인한다.
-  const sites = await getCaptureSites();
-  const keys = visit.keys.filter((k) => isCaptureTarget(k, sites));
+  // 캡처 대상 사이트 목록에 있는 북마크만 찍는다("모든 사이트"가 켜져 있으면 모두).
+  // 설정은 관리 페이지에서 언제든 바뀔 수 있으므로 방문 기록 시점이 아니라 캡처 직전에 확인한다.
+  const [sites, allSites] = await Promise.all([getCaptureSites(), getCaptureAllSites()]);
+  const keys = visit.keys.filter((k) => isCaptureTarget(k, sites, allSites));
   if (keys.length === 0) {
     console.debug("[thumbnail] 캡처 대상 사이트가 아니라 건너뜀:", visit.keys);
     return;

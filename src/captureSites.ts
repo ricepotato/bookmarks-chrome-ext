@@ -6,6 +6,11 @@
 import { getHostname, isValidHostname, matchesDomain } from "./manage/bookmarks";
 
 export const CAPTURE_SITES_KEY = "captureSites";
+/**
+ * "모든 사이트" 체크 여부. 목록과 따로 저장하므로 켜고 꺼도 목록의 사이트별 설정은
+ * 그대로 남는다.
+ */
+export const CAPTURE_ALL_SITES_KEY = "captureAllSites";
 
 export type ButtonPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -23,6 +28,9 @@ export interface CaptureSite {
   /** 버튼을 띄울 화면 모서리 */
   buttonPosition: ButtonPosition;
 }
+
+/** "모든 사이트"가 켜져 있을 때 목록에 없는 사이트에 버튼을 띄우는 위치 */
+export const ALL_SITES_BUTTON_POSITION: ButtonPosition = "bottom-left";
 
 export function newCaptureSite(domain: string): CaptureSite {
   return { domain, showAddButton: false, buttonPosition: "bottom-right" };
@@ -43,6 +51,14 @@ export function parseCaptureSites(stored: unknown): CaptureSite[] {
 
 export async function setCaptureSites(sites: CaptureSite[]): Promise<void> {
   await chrome.storage.local.set({ [CAPTURE_SITES_KEY]: sites });
+}
+
+export async function getCaptureAllSites(): Promise<boolean> {
+  return (await chrome.storage.local.get(CAPTURE_ALL_SITES_KEY))[CAPTURE_ALL_SITES_KEY] === true;
+}
+
+export async function setCaptureAllSites(all: boolean): Promise<void> {
+  await chrome.storage.local.set({ [CAPTURE_ALL_SITES_KEY]: all });
 }
 
 /**
@@ -72,9 +88,31 @@ export function findCaptureSite(
     .sort((a, b) => b.domain.length - a.domain.length)[0];
 }
 
-/** 주소의 호스트가 목록의 도메인(또는 그 하위 도메인)에 해당하는지 */
-export function isCaptureTarget(url: string, sites: CaptureSite[]): boolean {
-  return findCaptureSite(url, sites) !== undefined;
+/**
+ * 주소를 캡처할지. "모든 사이트"가 켜져 있으면 모두, 아니면 목록의 도메인
+ * (또는 그 하위 도메인)만 캡처한다.
+ */
+export function isCaptureTarget(
+  url: string,
+  sites: CaptureSite[],
+  allSites: boolean,
+): boolean {
+  return allSites || findCaptureSite(url, sites) !== undefined;
+}
+
+/**
+ * 이 주소의 페이지에 즐겨찾기 버튼을 띄울 위치. 띄우지 않으면 null.
+ * 목록에 있는 사이트는 "모든 사이트" 여부와 관계없이 그 사이트의 설정을 따르고,
+ * 목록에 없는 사이트는 "모든 사이트"가 켜져 있을 때만 기본 위치에 띄운다.
+ */
+export function buttonPositionFor(
+  url: string,
+  sites: CaptureSite[],
+  allSites: boolean,
+): ButtonPosition | null {
+  const site = findCaptureSite(url, sites);
+  if (site) return site.showAddButton ? site.buttonPosition : null;
+  return allSites ? ALL_SITES_BUTTON_POSITION : null;
 }
 
 // ---- content script ↔ 서비스 워커 메시지 ----
