@@ -21,6 +21,7 @@ export async function loadBookmarksBarFlat(): Promise<FlatBookmark[]> {
           title: node.title,
           url: node.url,
           dateAdded: node.dateAdded,
+          index: node.index ?? 0,
           path,
         });
       }
@@ -34,6 +35,7 @@ export async function loadBookmarksBarFlat(): Promise<FlatBookmark[]> {
           title: child.title,
           url: child.url,
           dateAdded: child.dateAdded,
+          index: child.index ?? 0,
           path,
         });
       } else {
@@ -60,6 +62,7 @@ export async function loadBookmarkFolders(): Promise<BookmarkFolder[]> {
           id: child.id,
           parentId: child.parentId ?? node.id,
           title: child.title,
+          index: child.index ?? 0,
           path: childPath,
         });
         walk(child, childPath);
@@ -98,6 +101,19 @@ export async function updateBookmark(
   changes: { title?: string; url?: string },
 ): Promise<void> {
   await chrome.bookmarks.update(id, changes);
+}
+
+/**
+ * 북마크나 폴더를 parentId 폴더의 index 위치로 옮긴다.
+ * 같은 폴더 안에서 뒤쪽으로 옮길 때도 index는 "옮기기 전" 목록 기준이다.
+ * (Chrome이 자기 자신이 빠지는 만큼을 알아서 보정한다.)
+ */
+export async function moveBookmark(
+  id: string,
+  parentId: string,
+  index: number,
+): Promise<void> {
+  await chrome.bookmarks.move(id, { parentId, index });
 }
 
 export async function removeBookmark(id: string): Promise<void> {

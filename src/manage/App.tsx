@@ -6,6 +6,7 @@ import {
   loadBookmarkFolders,
   loadBookmarksBarFlat,
   loadFolderOptions,
+  moveBookmark,
   normalizeUrlForDedup,
   removeBookmark,
   updateBookmark,
@@ -177,6 +178,11 @@ export default function App() {
     await reload();
   };
 
+  const handleMove = async (id: string, parentId: string, index: number) => {
+    await moveBookmark(id, parentId, index);
+    await reload();
+  };
+
   const handleRemoveThumbnail = async (url: string) => {
     const key = normalizeUrlForDedup(url);
     await deleteThumbnail(key);
@@ -312,6 +318,8 @@ export default function App() {
                 showPath={searching}
                 onOpenFolder={setCurrentFolderId}
                 onEdit={(b) => setEditingId(b.id)}
+                // 검색 결과는 여러 폴더가 섞여 있어 순서를 바꿀 기준이 없으므로 끈다.
+                onMove={searching ? undefined : handleMove}
               />
             )}
           </section>

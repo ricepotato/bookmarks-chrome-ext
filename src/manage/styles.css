@@ -500,6 +500,26 @@ button.tile-folder:hover:not(:disabled) {
   opacity: 1;
 }
 
+/* ---- 드래그로 순서 바꾸기 ---- */
+
+.tile[draggable="true"] {
+  cursor: grab;
+}
+
+.tile.dragging {
+  opacity: 0.4;
+}
+
+/* 놓을 위치를 타일 옆의 세로 막대로 보여준다. 타일은 overflow: hidden이라 바깥에 그리는
+   가상 요소는 잘리므로, 잘리지 않는 바깥 box-shadow로 그린다. */
+.tile.drop-before {
+  box-shadow: -8px 0 0 -4px var(--accent);
+}
+
+.tile.drop-after {
+  box-shadow: 8px 0 0 -4px var(--accent);
+}
+
 .edit-dialog {
   width: min(480px, calc(100vw - 32px));
   border: 1px solid var(--border);

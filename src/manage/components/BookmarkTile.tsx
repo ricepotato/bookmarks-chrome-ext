@@ -10,6 +10,10 @@ interface Props {
   /** 검색 결과처럼 여러 폴더의 북마크가 섞여 있을 때 폴더 경로를 함께 표시한다. */
   showPath?: boolean;
   onEdit: (bookmark: FlatBookmark) => void;
+  /** 드래그 중 표시용 클래스 (dragging, drop-before, drop-after) */
+  className?: string;
+  /** 순서 바꾸기용 드래그 속성. 없으면 드래그할 수 없다. */
+  dragProps?: React.HTMLAttributes<HTMLElement> & { draggable?: boolean };
 }
 
 /** 마우스를 잠깐 올려두었을 때만 크게 보여주기 위한 지연 시간 */
@@ -26,6 +30,8 @@ export default function BookmarkTile({
   thumbnailUrl,
   showPath,
   onEdit,
+  className,
+  dragProps,
 }: Props) {
   const host = getHostname(bookmark.url) ?? bookmark.url;
   const label = bookmark.title || host;
@@ -69,17 +75,29 @@ export default function BookmarkTile({
   };
 
   return (
-    <div className="tile" onMouseEnter={handleMouseEnter} onMouseLeave={hidePreview}>
+    <div
+      className={className ? `tile ${className}` : "tile"}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={hidePreview}
+      {...dragProps}
+      onDragStart={(e) => {
+        // 끌기 시작하면 확대 미리보기는 닫는다.
+        hidePreview();
+        dragProps?.onDragStart?.(e);
+      }}
+    >
       <a
         className="tile-link"
         href={bookmark.url}
         onClick={handleOpen}
+        // 링크/이미지 자체가 끌리지 않고 타일 전체가 끌리도록 한다.
+        draggable={false}
         // 캡처 이미지가 있으면 툴팁 대신 미리보기 이미지 아래에 같은 내용을 보여준다.
         title={thumbnailUrl ? undefined : `${label}\n${bookmark.url}`}
       >
         <div className="tile-thumb">
           {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="" loading="lazy" />
+            <img src={thumbnailUrl} alt="" loading="lazy" draggable={false} />
           ) : (
             <span className="tile-thumb-letter">
               {label.trim().charAt(0).toUpperCase() || "?"}
