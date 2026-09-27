@@ -6,6 +6,7 @@ import {
   loadBookmarkFolders,
   loadBookmarksBarFlat,
   loadFolderOptions,
+  normalizeUrlForDedup,
   removeBookmark,
   updateBookmark,
 } from "./bookmarks";
@@ -17,6 +18,9 @@ import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
 import CaptureSites from "./components/CaptureSites";
 import { useThumbnails } from "./useThumbnails";
+import { moveThumbnails, notifyThumbnailsChanged } from "../thumbnails";
+import { moveThumbnailsInDrive } from "../drive";
+import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
 export default function App() {
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
@@ -148,12 +152,35 @@ export default function App() {
     await reload();
   };
 
-  const handleBulkApply = async (changes: { id: string; url: string }[]) => {
+  const handleBulkApply = async (
+    changes: { id: string; url: string }[],
+  ): Promise<BulkApplyResult> => {
     const updateBookmarkPromises = changes.map((c) =>
       updateBookmark(c.id, { url: c.url }),
     );
     await Promise.all(updateBookmarkPromises);
+
+    // 바뀐 주소로 썸네일도 옮긴다. 바뀌지 않은 북마크가 아직 옛 주소를 쓰고 있으면
+    // 그 썸네일은 지우지 않고 복사만 한다.
+    const oldUrlById = new Map(bookmarks.map((b) => [b.id, b.url]));
+    const changedIds = new Set(changes.map((c) => c.id));
+    const keep = new Set(
+      bookmarks
+        .filter((b) => !changedIds.has(b.id))
+        .map((b) => normalizeUrlForDedup(b.url)),
+    );
+    const moves = changes.flatMap((c) => {
+      const oldUrl = oldUrlById.get(c.id);
+      return oldUrl
+        ? [{ from: normalizeUrlForDedup(oldUrl), to: normalizeUrlForDedup(c.url) }]
+        : [];
+    });
+    const moved = await moveThumbnails(moves, keep);
+    notifyThumbnailsChanged(moves.flatMap((m) => [m.from, m.to]));
     await reload();
+
+    const drive = await moveThumbnailsInDrive(moved);
+    return { thumbnails: moved.length, driveFailed: drive.failed };
   };
 
   const handleDeleteMany = async (ids: string[]) => {

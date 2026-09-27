@@ -2,9 +2,16 @@ import { useMemo, useState } from "react";
 import type { FlatBookmark } from "../types";
 import { getHostname, matchesDomain, replaceHostname } from "../bookmarks";
 
+export interface BulkApplyResult {
+  /** 새 주소로 옮긴 썸네일 수 */
+  thumbnails: number;
+  /** Drive 백업 파일을 옮기지 못한 수 */
+  driveFailed: number;
+}
+
 interface Props {
   bookmarks: FlatBookmark[];
-  onApply: (changes: { id: string; url: string }[]) => Promise<void>;
+  onApply: (changes: { id: string; url: string }[]) => Promise<BulkApplyResult>;
 }
 
 export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
@@ -13,7 +20,7 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
   const [includeSubdomains, setIncludeSubdomains] = useState(true);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<number | null>(null);
+  const [done, setDone] = useState<string | null>(null);
 
   const matches = useMemo(() => {
     const find = findDomain.trim();
@@ -53,8 +60,15 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
 
     setApplying(true);
     try {
-      await onApply(changes);
-      setDone(changes.length);
+      const result = await onApply(changes);
+      let message = `${changes.length}개 북마크를 수정했습니다.`;
+      if (result.thumbnails > 0) {
+        message += ` 캡처 이미지 ${result.thumbnails}개도 새 주소로 옮겼습니다.`;
+      }
+      if (result.driveFailed > 0) {
+        message += ` (Drive 백업 ${result.driveFailed}개는 옮기지 못함, 콘솔 확인)`;
+      }
+      setDone(message);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -67,7 +81,8 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
       <h2>도메인 일괄 수정</h2>
       <p className="hint">
         북마크 바(하위 폴더 포함) 안에서 특정 도메인을 가진 북마크의 주소를 한 번에
-        바꿉니다. 경로/쿼리는 그대로 유지되고 호스트(도메인) 부분만 바뀝니다.
+        바꿉니다. 경로/쿼리는 그대로 유지되고 호스트(도메인) 부분만 바뀝니다. 연결된
+        캡처 이미지(Drive 백업 포함)도 바뀐 주소로 함께 옮깁니다.
       </p>
       <div className="bulk-editor-fields">
         <label>
@@ -119,7 +134,7 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
         일괄 적용
       </button>
       {error && <div className="field-error">{error}</div>}
-      {done !== null && <div className="success-msg">{done}개 북마크를 수정했습니다.</div>}
+      {done !== null && <div className="success-msg">{done}</div>}
     </div>
   );
 }

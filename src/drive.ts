@@ -9,6 +9,7 @@ import {
   getAllThumbnails,
   getThumbnail,
   putThumbnail,
+  type MovedThumbnail,
   type ThumbnailRecord,
 } from "./thumbnails";
 
@@ -167,15 +168,11 @@ function fileNameFor(key: string, hash: string): string {
   return `${host}_${hash.slice(0, 12)}.jpg`;
 }
 
-/** 썸네일 하나를 설정된 폴더에 올린다. 같은 키의 파일이 있으면 내용을 덮어쓴다. */
-async function uploadThumbnail(
-  key: string,
-  blob: Blob,
-  settings: DriveSettings,
-): Promise<void> {
-  const folderId = await ensureFolder(settings);
-  const hash = await sha256Hex(key);
-
+/** 폴더 안에서 썸네일 키(의 해시)에 해당하는 파일 id. 없으면 undefined */
+async function findThumbnailFile(
+  folderId: string,
+  hash: string,
+): Promise<string | undefined> {
   const query = [
     `${q(folderId)} in parents`,
     `appProperties has { key=${q(PROP_KEY)} and value=${q(hash)} }`,
@@ -184,7 +181,18 @@ async function uploadThumbnail(
   const found = await driveFetch(
     `${API}/files?q=${encodeURIComponent(query)}&fields=files(id)&spaces=drive`,
   ).then((r) => r.json());
-  const existingId: string | undefined = found.files?.[0]?.id;
+  return found.files?.[0]?.id;
+}
+
+/** 썸네일 하나를 설정된 폴더에 올린다. 같은 키의 파일이 있으면 내용을 덮어쓴다. */
+async function uploadThumbnail(
+  key: string,
+  blob: Blob,
+  settings: DriveSettings,
+): Promise<void> {
+  const folderId = await ensureFolder(settings);
+  const hash = await sha256Hex(key);
+  const existingId = await findThumbnailFile(folderId, hash);
 
   if (existingId) {
     await driveFetch(`${UPLOAD_API}/files/${existingId}?uploadType=media`, {
@@ -254,4 +262,36 @@ export async function syncAllThumbnailsToDrive(
     onProgress?.(uploaded + failed, pending.length);
   }
   return { uploaded, failed };
+}
+
+/**
+ * 도메인 일괄 수정 등으로 썸네일 키가 바뀐 것을 Drive에도 반영한다.
+ * 새 키로 업로드하고(파일 이름에 새 도메인이 들어간다), 로컬에서 옛 키를 지웠다면
+ * Drive의 옛 파일도 지운다. Drive 백업이 꺼져 있으면 아무것도 하지 않으며,
+ * 이 경우 새 키의 썸네일은 나중에 "전체 업로드"로 올라간다.
+ */
+export async function moveThumbnailsInDrive(
+  moved: MovedThumbnail[],
+): Promise<{ moved: number; failed: number }> {
+  const settings = await getDriveSettings();
+  if (!settings.enabled || !isDriveConfigured() || moved.length === 0) {
+    return { moved: 0, failed: 0 };
+  }
+  let ok = 0;
+  let failed = 0;
+  for (const m of moved) {
+    try {
+      await syncThumbnailToDrive(m.to, m.record);
+      if (m.removedFrom) {
+        const folderId = await ensureFolder(await getDriveSettings());
+        const oldId = await findThumbnailFile(folderId, await sha256Hex(m.from));
+        if (oldId) await driveFetch(`${API}/files/${oldId}`, { method: "DELETE" });
+      }
+      ok++;
+    } catch (e) {
+      console.warn("[drive] 썸네일 이동 실패:", m.from, "→", m.to, e);
+      failed++;
+    }
+  }
+  return { moved: ok, failed };
 }
