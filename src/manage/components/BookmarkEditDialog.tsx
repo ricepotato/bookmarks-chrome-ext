@@ -5,6 +5,8 @@ interface Props {
   bookmark: FlatBookmark;
   onSave: (id: string, changes: { title: string; url: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  /** 저장된 미리보기 이미지가 있을 때만 전달된다. */
+  onRemoveThumbnail?: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -12,6 +14,7 @@ export default function BookmarkEditDialog({
   bookmark,
   onSave,
   onDelete,
+  onRemoveThumbnail,
   onClose,
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -19,6 +22,7 @@ export default function BookmarkEditDialog({
   const [url, setUrl] = useState(bookmark.url);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const dirty = title !== bookmark.title || url !== bookmark.url;
 
@@ -65,6 +69,26 @@ export default function BookmarkEditDialog({
     }
   };
 
+  const handleRemoveThumbnail = async () => {
+    if (!onRemoveThumbnail) return;
+    const ok = window.confirm(
+      `이 북마크의 미리보기 이미지를 삭제할까요?\n\n${bookmark.url}\n\n` +
+        "같은 주소를 쓰는 다른 북마크의 이미지도 함께 사라집니다. " +
+        "Google Drive에 백업된 파일은 지우지 않습니다.",
+    );
+    if (!ok) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onRemoveThumbnail();
+      setNotice("미리보기 이미지를 삭제했습니다.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     // Esc로 닫을 때도 onClose가 호출되도록 cancel/close 이벤트를 받는다.
     <dialog ref={dialogRef} className="edit-dialog" onClose={onClose}>
@@ -93,6 +117,7 @@ export default function BookmarkEditDialog({
           />
         </label>
         {error && <div className="field-error">{error}</div>}
+        {notice && <div className="success-msg">{notice}</div>}
         <div className="edit-dialog-actions">
           <button
             type="button"
@@ -102,6 +127,11 @@ export default function BookmarkEditDialog({
           >
             삭제
           </button>
+          {onRemoveThumbnail && (
+            <button type="button" onClick={handleRemoveThumbnail} disabled={saving}>
+              이미지 제거
+            </button>
+          )}
           <span className="spacer" />
           <button type="button" onClick={onClose} disabled={saving}>
             취소

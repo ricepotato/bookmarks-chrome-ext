@@ -19,7 +19,11 @@ import DriveSync from "./components/DriveSync";
 import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
 import { useThumbnails } from "./useThumbnails";
-import { moveThumbnails, notifyThumbnailsChanged } from "../thumbnails";
+import {
+  deleteThumbnail,
+  moveThumbnails,
+  notifyThumbnailsChanged,
+} from "../thumbnails";
 import { moveThumbnailsInDrive } from "../drive";
 import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
@@ -171,6 +175,12 @@ export default function App() {
   const handleDeleteRow = async (id: string) => {
     await removeBookmark(id);
     await reload();
+  };
+
+  const handleRemoveThumbnail = async (url: string) => {
+    const key = normalizeUrlForDedup(url);
+    await deleteThumbnail(key);
+    notifyThumbnailsChanged([key]);
   };
 
   const handleAdd = async (params: {
@@ -337,6 +347,11 @@ export default function App() {
           bookmark={editing}
           onSave={handleSaveRow}
           onDelete={handleDeleteRow}
+          onRemoveThumbnail={
+            thumbnails.has(normalizeUrlForDedup(editing.url))
+              ? () => handleRemoveThumbnail(editing.url)
+              : undefined
+          }
           onClose={() => setEditingId(null)}
         />
       )}

@@ -79,6 +79,11 @@ export async function putThumbnail(
   );
 }
 
+export async function deleteThumbnail(key: string): Promise<void> {
+  const db = await openDb();
+  await promisify(db.transaction(STORE, "readwrite").objectStore(STORE).delete(key));
+}
+
 export async function getAllThumbnails(): Promise<Map<string, ThumbnailRecord>> {
   const db = await openDb();
   const store = db.transaction(STORE).objectStore(STORE);
