@@ -437,6 +437,9 @@ button.tile-folder {
   padding: 0;
   font: inherit;
   text-align: left;
+  border: none;
+  border-radius: 0;
+  background: none;
 }
 
 button.tile-folder:hover:not(:disabled) {
@@ -518,6 +521,12 @@ button.tile-folder:hover:not(:disabled) {
 
 .tile.drop-after {
   box-shadow: 8px 0 0 -4px var(--accent);
+}
+
+/* 북마크를 폴더 위에 놓으면 폴더 안으로 들어간다는 것을 폴더 타일 강조로 보여준다. */
+.tile.drop-into {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .edit-dialog {

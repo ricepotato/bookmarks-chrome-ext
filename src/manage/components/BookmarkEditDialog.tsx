@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import type { FlatBookmark } from "../types";
+import { useState } from "react";
+import type { FlatBookmark, FolderOption } from "../types";
+import { useModalDialog } from "../useModalDialog";
 
 interface Props {
   bookmark: FlatBookmark;
-  onSave: (id: string, changes: { title: string; url: string }) => Promise<void>;
+  /** 옮길 수 있는 폴더 목록 (북마크 바와 그 하위 폴더) */
+  folders: FolderOption[];
+  onSave: (
+    id: string,
+    changes: { title: string; url: string; parentId: string },
+  ) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   /** 저장된 미리보기 이미지가 있을 때만 전달된다. */
   onRemoveThumbnail?: () => Promise<void>;
@@ -12,23 +18,23 @@ interface Props {
 
 export default function BookmarkEditDialog({
   bookmark,
+  folders,
   onSave,
   onDelete,
   onRemoveThumbnail,
   onClose,
 }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [title, setTitle] = useState(bookmark.title);
   const [url, setUrl] = useState(bookmark.url);
+  const [parentId, setParentId] = useState(bookmark.parentId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const dirty = title !== bookmark.title || url !== bookmark.url;
+  const dirty =
+    title !== bookmark.title || url !== bookmark.url || parentId !== bookmark.parentId;
 
-  useEffect(() => {
-    dialogRef.current?.showModal();
-  }, []);
+  const dialogProps = useModalDialog(onClose, saving);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +52,7 @@ export default function BookmarkEditDialog({
     setSaving(true);
     setError(null);
     try {
-      await onSave(bookmark.id, { title, url });
+      await onSave(bookmark.id, { title, url, parentId });
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -90,13 +96,9 @@ export default function BookmarkEditDialog({
   };
 
   return (
-    // Esc로 닫을 때도 onClose가 호출되도록 cancel/close 이벤트를 받는다.
-    <dialog ref={dialogRef} className="edit-dialog" onClose={onClose}>
+    <dialog className="edit-dialog" {...dialogProps}>
       <form onSubmit={handleSave}>
         <h2>북마크 편집</h2>
-        <p className="hint">
-          폴더: {bookmark.path.length > 0 ? bookmark.path.join(" > ") : "(최상위)"}
-        </p>
         <label>
           제목
           <input
@@ -115,6 +117,20 @@ export default function BookmarkEditDialog({
             onChange={(e) => setUrl(e.target.value)}
             disabled={saving}
           />
+        </label>
+        <label>
+          폴더 (바꾸면 그 폴더의 맨 끝으로 이동)
+          <select
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            disabled={saving}
+          >
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </select>
         </label>
         {error && <div className="field-error">{error}</div>}
         {notice && <div className="success-msg">{notice}</div>}

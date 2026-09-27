@@ -104,20 +104,29 @@ export async function updateBookmark(
 }
 
 /**
- * 북마크나 폴더를 parentId 폴더의 index 위치로 옮긴다.
+ * 북마크나 폴더를 parentId 폴더의 index 위치로 옮긴다. index를 생략하면 맨 끝에 넣는다.
  * 같은 폴더 안에서 뒤쪽으로 옮길 때도 index는 "옮기기 전" 목록 기준이다.
  * (Chrome이 자기 자신이 빠지는 만큼을 알아서 보정한다.)
  */
 export async function moveBookmark(
   id: string,
   parentId: string,
-  index: number,
+  index?: number,
 ): Promise<void> {
-  await chrome.bookmarks.move(id, { parentId, index });
+  await chrome.bookmarks.move(id, index === undefined ? { parentId } : { parentId, index });
 }
 
 export async function removeBookmark(id: string): Promise<void> {
   await chrome.bookmarks.remove(id);
+}
+
+export async function renameFolder(id: string, title: string): Promise<void> {
+  await chrome.bookmarks.update(id, { title });
+}
+
+/** 폴더와 그 안의 북마크/하위 폴더를 모두 삭제한다. */
+export async function removeFolder(id: string): Promise<void> {
+  await chrome.bookmarks.removeTree(id);
 }
 
 export async function createBookmark(params: {

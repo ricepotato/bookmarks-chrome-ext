@@ -9,10 +9,13 @@ import {
   moveBookmark,
   normalizeUrlForDedup,
   removeBookmark,
+  removeFolder,
+  renameFolder,
   updateBookmark,
 } from "./bookmarks";
 import BookmarkGrid from "./components/BookmarkGrid";
 import BookmarkEditDialog from "./components/BookmarkEditDialog";
+import FolderEditDialog from "./components/FolderEditDialog";
 import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
@@ -63,6 +66,7 @@ export default function App() {
   const [folderTree, setFolderTree] = useState<BookmarkFolder[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState(BOOKMARKS_BAR_ID);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const thumbnails = useThumbnails();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -165,11 +169,51 @@ export default function App() {
     ? bookmarks.find((b) => b.id === editingId)
     : undefined;
 
+  const editingFolder = editingFolderId ? folderById.get(editingFolderId) : undefined;
+
+  /** 편집 중인 폴더와 그 하위 폴더 id. 자기 자신 안으로는 옮길 수 없으므로 위치 목록에서 뺀다. */
+  const editingFolderSubtree = useMemo(() => {
+    const ids = new Set<string>();
+    if (!editingFolderId) return ids;
+    ids.add(editingFolderId);
+    for (const f of folderTree) {
+      let id: string | undefined = f.parentId;
+      while (id && id !== BOOKMARKS_BAR_ID) {
+        if (id === editingFolderId) {
+          ids.add(f.id);
+          break;
+        }
+        id = folderById.get(id)?.parentId;
+      }
+    }
+    return ids;
+  }, [editingFolderId, folderTree, folderById]);
+
   const handleSaveRow = async (
     id: string,
-    changes: { title: string; url: string },
+    { parentId, ...changes }: { title: string; url: string; parentId: string },
   ) => {
     await updateBookmark(id, changes);
+    // 폴더를 바꿨으면 새 폴더의 맨 끝으로 옮긴다.
+    if (parentId !== bookmarks.find((b) => b.id === id)?.parentId) {
+      await moveBookmark(id, parentId);
+    }
+    await reload();
+  };
+
+  const handleSaveFolder = async (
+    id: string,
+    { title, parentId }: { title: string; parentId: string },
+  ) => {
+    const folder = folderById.get(id);
+    if (title !== folder?.title) await renameFolder(id, title);
+    // 위치를 바꿨으면 새 폴더의 맨 끝으로 옮긴다.
+    if (parentId !== folder?.parentId) await moveBookmark(id, parentId);
+    await reload();
+  };
+
+  const handleDeleteFolder = async (id: string) => {
+    await removeFolder(id);
     await reload();
   };
 
@@ -178,7 +222,7 @@ export default function App() {
     await reload();
   };
 
-  const handleMove = async (id: string, parentId: string, index: number) => {
+  const handleMove = async (id: string, parentId: string, index?: number) => {
     await moveBookmark(id, parentId, index);
     await reload();
   };
@@ -318,6 +362,7 @@ export default function App() {
                 showPath={searching}
                 onOpenFolder={setCurrentFolderId}
                 onEdit={(b) => setEditingId(b.id)}
+                onEditFolder={(f) => setEditingFolderId(f.id)}
                 // 검색 결과는 여러 폴더가 섞여 있어 순서를 바꿀 기준이 없으므로 끈다.
                 onMove={searching ? undefined : handleMove}
               />
@@ -349,10 +394,24 @@ export default function App() {
         </main>
       </div>
 
+      {editingFolder && (
+        <FolderEditDialog
+          key={editingFolder.id}
+          folder={editingFolder}
+          folders={folders.filter((f) => !editingFolderSubtree.has(f.id))}
+          bookmarkCount={folderCounts.get(editingFolder.id) ?? 0}
+          subfolderCount={editingFolderSubtree.size - 1}
+          onSave={handleSaveFolder}
+          onDelete={handleDeleteFolder}
+          onClose={() => setEditingFolderId(null)}
+        />
+      )}
+
       {editing && (
         <BookmarkEditDialog
           key={editing.id}
           bookmark={editing}
+          folders={folders}
           onSave={handleSaveRow}
           onDelete={handleDeleteRow}
           onRemoveThumbnail={
