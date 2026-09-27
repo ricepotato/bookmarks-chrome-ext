@@ -15,6 +15,7 @@ import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
+import CaptureSites from "./components/CaptureSites";
 import { useThumbnails } from "./useThumbnails";
 
 export default function App() {
@@ -184,6 +185,10 @@ export default function App() {
 
       <section>
         <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
+      </section>
+
+      <section>
+        <CaptureSites />
       </section>
 
       <section>

@@ -477,3 +477,26 @@ button.tile-folder:hover:not(:disabled) {
   color: var(--accent);
   padding: 6px 0;
 }
+
+.capture-site-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  max-width: 480px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.capture-site-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.capture-site-list li:last-child {
+  border-bottom: none;
+}

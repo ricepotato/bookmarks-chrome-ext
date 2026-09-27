@@ -6,6 +6,7 @@ import {
   type ThumbnailUpdatedMessage,
 } from "./thumbnails";
 import { syncThumbnailToDrive } from "./drive";
+import { getCaptureSites, isCaptureTarget } from "./captureSites";
 
 // 서비스 워커: 확장 아이콘 클릭 시 관리 페이지를 새 탭으로 연다.
 // action.default_popup을 지정하지 않았기 때문에 onClicked가 정상적으로 동작한다.
@@ -15,6 +16,7 @@ chrome.action.onClicked.addListener(() => {
 
 // ---- 썸네일 자동 캡처 ----
 // 북마크된 사이트의 로딩이 끝나면 화면을 캡처해 썸네일로 저장한다.
+// 단, 관리 페이지의 "화면 캡처 대상 사이트" 목록에 있는 도메인의 북마크만 찍는다.
 // captureVisibleTab은 창에 "보이는" 탭만 찍을 수 있으므로, 백그라운드에서 로드된 탭은
 // 사용자가 그 탭으로 전환했을 때 찍는다.
 //
@@ -130,7 +132,16 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
     return;
   }
 
-  const records = await Promise.all(visit.keys.map((k) => getThumbnail(k)));
+  // 캡처 대상 사이트 목록에 있는 북마크만 찍는다. 목록은 관리 페이지에서 언제든
+  // 바뀔 수 있으므로 방문 기록 시점이 아니라 캡처 직전에 확인한다.
+  const sites = await getCaptureSites();
+  const keys = visit.keys.filter((k) => isCaptureTarget(k, sites));
+  if (keys.length === 0) {
+    console.debug("[thumbnail] 캡처 대상 사이트가 아니라 건너뜀:", visit.keys);
+    return;
+  }
+
+  const records = await Promise.all(keys.map((k) => getThumbnail(k)));
   const fresh = records.every(
     (r) => r && Date.now() - r.capturedAt < RECAPTURE_AFTER_MS,
   );
@@ -151,7 +162,7 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
   const blob = await resize(dataUrl);
   const capturedAt = Date.now();
 
-  for (const key of visit.keys) {
+  for (const key of keys) {
     const record = { blob, capturedAt };
     await putThumbnail(key, record);
     console.log("[thumbnail] 저장 완료:", key, "←", current.url);
