@@ -134,7 +134,7 @@ export default function BookmarkGrid({
             onClick={() => onOpenFolder(f.id)}
             title={f.path.join(" > ")}
           >
-            <div className="tile-thumb">
+            <div className="tile-thumb glass">
               <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
                 <path
                   fill="currentColor"

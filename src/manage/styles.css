@@ -574,9 +574,9 @@ button.tile-folder:hover:not(:disabled) {
   overflow: hidden;
 }
 
-/* 이미지가 없는 북마크와 폴더는 반투명한 회색 유리판처럼 보이게 한다:
+/* 캡처 이미지가 없는 북마크와 폴더는 반투명한 회색 유리판처럼 보이게 한다:
    은은한 회색 바탕 + 위쪽 빛 반사 + 가장자리 하이라이트 + 대각선 광택 */
-.tile-thumb:not(:has(img)) {
+.tile-thumb.glass {
   background:
     linear-gradient(180deg, var(--glass-highlight) 0%, transparent 55%),
     linear-gradient(145deg, var(--glass-top), var(--glass-bottom));
@@ -587,7 +587,7 @@ button.tile-folder:hover:not(:disabled) {
 }
 
 /* 마우스를 올리면 광택 띠가 유리 위를 한 번 지나간다. */
-.tile-thumb:not(:has(img))::after {
+.tile-thumb.glass::after {
   content: "";
   position: absolute;
   inset: -20% -60%;
@@ -602,18 +602,18 @@ button.tile-folder:hover:not(:disabled) {
   pointer-events: none;
 }
 
-.tile:hover .tile-thumb:not(:has(img))::after {
+.tile:hover .tile-thumb.glass::after {
   transform: translateX(60%);
 }
 
-.tile-thumb img {
+.tile-thumb-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.tile:hover .tile-thumb img {
+.tile:hover .tile-thumb-image {
   transform: scale(1.04);
 }
 
@@ -622,6 +622,17 @@ button.tile-folder:hover:not(:disabled) {
   width: 52px;
   height: 52px;
   filter: drop-shadow(0 1px 0 var(--glass-edge));
+}
+
+/* 방문한 사이트의 파비콘: 유리판 위에 앱 아이콘처럼 흰 둥근 판에 얹어 보여준다. */
+.tile-favicon {
+  width: 56px;
+  height: 56px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-md);
+  object-fit: contain;
 }
 
 .tile-thumb-letter {

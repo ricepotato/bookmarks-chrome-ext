@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FlatBookmark } from "../types";
 import { getHostname } from "../bookmarks";
 import ThumbnailPreview from "./ThumbnailPreview";
+import { useFavicon } from "../favicon";
 
 interface Props {
   bookmark: FlatBookmark;
@@ -35,6 +36,8 @@ export default function BookmarkTile({
 }: Props) {
   const host = getHostname(bookmark.url) ?? bookmark.url;
   const label = bookmark.title || host;
+  // 캡처 이미지가 없을 때만 파비콘을 찾는다 (방문한 적 없는 사이트면 null → 첫 글자 표시).
+  const favicon = useFavicon(thumbnailUrl ? null : bookmark.url);
 
   const [previewAnchor, setPreviewAnchor] = useState<DOMRect | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
@@ -95,9 +98,17 @@ export default function BookmarkTile({
         // 캡처 이미지가 있으면 툴팁 대신 미리보기 이미지 아래에 같은 내용을 보여준다.
         title={thumbnailUrl ? undefined : `${label}\n${bookmark.url}`}
       >
-        <div className="tile-thumb">
+        <div className={thumbnailUrl ? "tile-thumb" : "tile-thumb glass"}>
           {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="" loading="lazy" draggable={false} />
+            <img
+              className="tile-thumb-image"
+              src={thumbnailUrl}
+              alt=""
+              loading="lazy"
+              draggable={false}
+            />
+          ) : favicon ? (
+            <img className="tile-favicon" src={favicon} alt="" draggable={false} />
           ) : (
             <span className="tile-thumb-letter">
               {label.trim().charAt(0).toUpperCase() || "?"}
