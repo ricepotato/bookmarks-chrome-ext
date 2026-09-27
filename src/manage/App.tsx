@@ -358,7 +358,7 @@ export default function App() {
 
           {/* 페이지를 옮겨도 입력 중인 값이나 진행 중인 작업이 사라지지 않도록
               모든 페이지를 그려 두고 현재 페이지만 보여준다. */}
-          <section className="page" hidden={page !== "list"}>
+          <section className="page page-list" hidden={page !== "list"}>
             <div className="list-header">
               <h2>
                 북마크 목록{" "}
@@ -371,7 +371,9 @@ export default function App() {
               <div className="list-actions">
                 {/* 검색 중에는 "지금 보고 있는 폴더"가 없으므로 숨긴다. */}
                 {!searching && (
-                  <button onClick={() => setCreatingFolder(true)}>+ 새 폴더</button>
+                  <button className="btn-primary" onClick={() => setCreatingFolder(true)}>
+                    + 새 폴더
+                  </button>
                 )}
                 <input
                   className="search-box"
