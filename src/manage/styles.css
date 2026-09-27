@@ -16,6 +16,14 @@
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
   --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.06);
   --shadow-lg: 0 14px 28px rgba(15, 23, 42, 0.14), 0 4px 10px rgba(15, 23, 42, 0.08);
+  /* 이미지 없는 타일의 유리 느낌 */
+  --glass-top: rgba(236, 239, 243, 0.95);
+  --glass-bottom: rgba(208, 213, 221, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --glass-edge-dark: rgba(15, 23, 42, 0.06);
+  --glass-sheen: rgba(255, 255, 255, 0.55);
+  --glass-ink: rgba(71, 85, 105, 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,6 +43,13 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
+    --glass-top: rgba(70, 74, 82, 0.55);
+    --glass-bottom: rgba(38, 40, 45, 0.7);
+    --glass-highlight: rgba(255, 255, 255, 0.1);
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --glass-edge-dark: rgba(0, 0, 0, 0.35);
+    --glass-sheen: rgba(255, 255, 255, 0.12);
+    --glass-ink: rgba(226, 232, 240, 0.55);
   }
 }
 
@@ -551,13 +566,44 @@ button.tile-folder:hover:not(:disabled) {
 }
 
 .tile-thumb {
+  position: relative;
   aspect-ratio: 16 / 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--thumb-bg), color-mix(in srgb, var(--thumb-bg) 70%, var(--accent)));
-  color: var(--accent);
   overflow: hidden;
+}
+
+/* 이미지가 없는 북마크와 폴더는 반투명한 회색 유리판처럼 보이게 한다:
+   은은한 회색 바탕 + 위쪽 빛 반사 + 가장자리 하이라이트 + 대각선 광택 */
+.tile-thumb:not(:has(img)) {
+  background:
+    linear-gradient(180deg, var(--glass-highlight) 0%, transparent 55%),
+    linear-gradient(145deg, var(--glass-top), var(--glass-bottom));
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -1px 0 var(--glass-edge-dark);
+  color: var(--glass-ink);
+}
+
+/* 마우스를 올리면 광택 띠가 유리 위를 한 번 지나간다. */
+.tile-thumb:not(:has(img))::after {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    var(--glass-sheen) 50%,
+    transparent 60%
+  );
+  transform: translateX(-60%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.tile:hover .tile-thumb:not(:has(img))::after {
+  transform: translateX(60%);
 }
 
 .tile-thumb img {
@@ -571,14 +617,17 @@ button.tile-folder:hover:not(:disabled) {
   transform: scale(1.04);
 }
 
+/* 유리에 새긴 것처럼: 옅은 회색 글자/아이콘 + 아래쪽 흰 빛 */
 .tile-thumb svg {
   width: 52px;
   height: 52px;
+  filter: drop-shadow(0 1px 0 var(--glass-edge));
 }
 
 .tile-thumb-letter {
   font-size: 44px;
   font-weight: 700;
+  text-shadow: 0 1px 0 var(--glass-edge);
 }
 
 .tile-body {
