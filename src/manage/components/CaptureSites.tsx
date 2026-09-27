@@ -71,7 +71,7 @@ export default function CaptureSites() {
   return (
     <div className="capture-sites">
       <h2>
-        화면 캡처 대상 사이트 <span className="count">({sites.length})</span>
+        미리보기 설정 <span className="count">({sites.length})</span>
       </h2>
       <p className="hint">
         이 목록에 있는 도메인(하위 도메인 포함)의 북마크만 방문할 때 화면을 캡처해 썸네일로

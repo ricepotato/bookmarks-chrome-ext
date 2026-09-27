@@ -26,7 +26,7 @@ import type { BulkApplyResult } from "./components/BulkDomainEditor";
 const MENU = [
   { id: "list", label: "북마크 목록" },
   { id: "add", label: "북마크 추가" },
-  { id: "capture", label: "화면 캡처 대상 사이트" },
+  { id: "capture", label: "미리보기 설정" },
   { id: "duplicates", label: "중복 제거" },
   { id: "domain", label: "도메인 일괄 수정" },
   { id: "drive", label: "Google Drive 백업" },
