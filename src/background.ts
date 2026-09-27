@@ -31,7 +31,7 @@ chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage();
 });
 
-// ---- "현재 사이트 즐겨찾기에 추가하기" 버튼 ----
+// ---- "현재 사이트 북마크에 추가하기" 버튼 ----
 // content script는 chrome.bookmarks를 쓸 수 없으므로 폴더 목록 조회, 북마크 여부 확인,
 // 북마크 추가, 화면 다시 캡처를 대신한다.
 chrome.runtime.onMessage.addListener(
@@ -77,7 +77,7 @@ async function addPageBookmark(
     await saveThumbnail([normalizeUrlForDedup(url)], blob, url);
     return { captured: true };
   } catch (e) {
-    console.warn("[thumbnail] 즐겨찾기 추가 중 캡처 실패:", e);
+    console.warn("[thumbnail] 북마크 추가 중 캡처 실패:", e);
     return { captured: false, captureError: e instanceof Error ? e.message : String(e) };
   }
 }
@@ -88,7 +88,7 @@ async function addPageBookmark(
  */
 async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Promise<void> {
   const key = await bookmarkKeyFor(url);
-  if (!key) throw new Error("즐겨찾기에 추가된 페이지가 아닙니다.");
+  if (!key) throw new Error("북마크에 추가된 페이지가 아닙니다.");
   if (!tab?.id) throw new Error("탭 정보를 알 수 없습니다.");
   const blob = await captureTab(tab.windowId);
   await saveThumbnail([key], blob, url);
@@ -96,7 +96,7 @@ async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Pro
 
 // ---- 썸네일 자동 캡처 ----
 // 북마크된 사이트의 로딩이 끝나면 화면을 캡처해 썸네일로 저장한다.
-// 단, 관리 페이지의 "미리보기 설정" 목록에 있는 도메인의 북마크만 찍는다.
+// 단, 관리 페이지의 "스크린샷 설정" 목록에 있는 도메인의 북마크만 찍는다.
 // ("모든 사이트"를 켜면 모든 북마크를 찍는다.)
 // captureVisibleTab은 창에 "보이는" 탭만 찍을 수 있으므로, 백그라운드에서 로드된 탭은
 // 사용자가 그 탭으로 전환했을 때 찍는다.

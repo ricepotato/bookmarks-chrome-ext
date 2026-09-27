@@ -8,7 +8,7 @@
   </defs>
   <!-- 배경 -->
   <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)"/>
-  <!-- 미리보기 이미지 카드 -->
+  <!-- 스크린샷 카드 -->
   <rect x="20" y="36" width="88" height="66" rx="10" fill="#ffffff"/>
   <circle cx="41" cy="56" r="7" fill="#bfdbfe"/>
   <path d="M28 94 L52 66 L67 82 L78 71 L100 94 Z" fill="#60a5fa"/>

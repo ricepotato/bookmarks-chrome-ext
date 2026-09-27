@@ -27,7 +27,7 @@ export default function FileBackup() {
   const handleExport = () =>
     run(async () => {
       const { blob, count } = await exportThumbnailsZip();
-      if (count === 0) return "내보낼 미리보기 이미지가 없습니다.";
+      if (count === 0) return "내보낼 스크린샷이 없습니다.";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -55,7 +55,7 @@ export default function FileBackup() {
     <div className="file-backup">
       <h3>파일로 백업</h3>
       <p className="hint">
-        저장된 미리보기 이미지를 ZIP 파일 하나로 내보내고, 나중에 그 파일에서 다시 가져올 수
+        저장된 스크린샷을 ZIP 파일 하나로 내보내고, 나중에 그 파일에서 다시 가져올 수
         있습니다. 로그인이 필요 없고, 다른 PC나 Chrome 프로필로 옮길 때도 쓸 수 있습니다.
         가져올 때 같은 주소의 이미지가 이미 있으면 더 최근에 찍은 쪽을 남깁니다.
       </p>

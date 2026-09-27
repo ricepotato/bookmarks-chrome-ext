@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FlatBookmark, FolderOption } from "../types";
 import { useModalDialog } from "../useModalDialog";
+import { isDriveConfigured } from "../../drive";
 
 interface Props {
   bookmark: FlatBookmark;
@@ -11,7 +12,7 @@ interface Props {
     changes: { title: string; url: string; parentId: string },
   ) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  /** 저장된 미리보기 이미지가 있을 때만 전달된다. */
+  /** 저장된 스크린샷이 있을 때만 전달된다. */
   onRemoveThumbnail?: () => Promise<void>;
   onClose: () => void;
 }
@@ -78,16 +79,16 @@ export default function BookmarkEditDialog({
   const handleRemoveThumbnail = async () => {
     if (!onRemoveThumbnail) return;
     const ok = window.confirm(
-      `이 북마크의 미리보기 이미지를 삭제할까요?\n\n${bookmark.url}\n\n` +
-        "같은 주소를 쓰는 다른 북마크의 이미지도 함께 사라집니다. " +
-        "Google Drive에 백업된 파일은 지우지 않습니다.",
+      `이 북마크의 스크린샷을 삭제할까요?\n\n${bookmark.url}\n\n` +
+        "같은 주소를 쓰는 다른 북마크의 이미지도 함께 사라집니다." +
+        (isDriveConfigured() ? " Google Drive에 백업된 파일은 지우지 않습니다." : ""),
     );
     if (!ok) return;
     setSaving(true);
     setError(null);
     try {
       await onRemoveThumbnail();
-      setNotice("미리보기 이미지를 삭제했습니다.");
+      setNotice("스크린샷을 삭제했습니다.");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

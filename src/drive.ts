@@ -45,8 +45,12 @@ export async function setDriveSettings(
   return next;
 }
 
-/** manifest에 OAuth 클라이언트 ID가 설정되어 빌드되었는지 */
+/**
+ * Drive 백업을 쓸 수 있게 빌드되었는지. 현재는 보류된 기능이라 기본 빌드에서는 false이며,
+ * 이때는 화면에 Drive 백업이 나타나지 않고 업로드/이동 등 모든 Drive 동작도 하지 않는다.
+ */
 export function isDriveConfigured(): boolean {
+  if (!__DRIVE_BACKUP__) return false;
   const clientId = chrome.runtime.getManifest().oauth2?.client_id;
   return !!clientId;
 }

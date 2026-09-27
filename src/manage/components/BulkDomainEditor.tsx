@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { FlatBookmark } from "../types";
 import { getHostname, matchesDomain, replaceHostname } from "../bookmarks";
+import { isDriveConfigured } from "../../drive";
 
 export interface BulkApplyResult {
   /** 새 주소로 옮긴 썸네일 수 */
@@ -82,7 +83,7 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
       <p className="hint">
         북마크 바(하위 폴더 포함) 안에서 특정 도메인을 가진 북마크의 주소를 한 번에
         바꿉니다. 경로/쿼리는 그대로 유지되고 호스트(도메인) 부분만 바뀝니다. 연결된
-        캡처 이미지(Drive 백업 포함)도 바뀐 주소로 함께 옮깁니다.
+        캡처 이미지{isDriveConfigured() && "(Drive 백업 포함)"}도 바뀐 주소로 함께 옮깁니다.
       </p>
       <div className="bulk-editor-fields">
         <label>

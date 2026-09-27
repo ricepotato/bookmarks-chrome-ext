@@ -1,5 +1,5 @@
-// content script: 캡처 대상 사이트 중 "즐겨찾기 추가 버튼"을 켠 사이트에서
-// 화면 모서리에 버튼을 띄운다. "즐겨찾기에 추가"를 누르면 저장할 폴더를 고르는 작은
+// content script: 캡처 대상 사이트 중 "북마크 추가 버튼"을 켠 사이트에서
+// 화면 모서리에 버튼을 띄운다. "북마크에 추가"를 누르면 저장할 폴더를 고르는 작은
 // 창이 뜨고, "캡처"는 이미 북마크된 페이지일 때만 눌러서 썸네일을 새로 찍을 수 있다.
 // 페이지의 CSS와 섞이지 않도록 Shadow DOM 안에 그린다.
 
@@ -146,8 +146,8 @@ function renderButton(position: ButtonPosition) {
   const root = el("div", { className: `root ${position}` });
   const fab = el("button", {
     className: "fab",
-    textContent: "★ 즐겨찾기에 추가",
-    title: "현재 사이트를 즐겨찾기에 추가",
+    textContent: "★ 북마크에 추가",
+    title: "현재 사이트를 북마크에 추가",
   });
   const captureButton = el("button", {
     className: "fab",
@@ -188,7 +188,7 @@ function renderButton(position: ButtonPosition) {
     captureButton.disabled = !bookmarked;
     captureButton.title = bookmarked
       ? "현재 화면을 캡처해 이 북마크의 썸네일을 교체"
-      : "즐겨찾기에 추가된 페이지에서만 사용할 수 있습니다";
+      : "북마크에 추가된 페이지에서만 사용할 수 있습니다";
   };
   refreshBookmarked();
   root.addEventListener("mouseenter", refreshBookmarked);
@@ -303,7 +303,7 @@ function buildPanel(close: () => void, onAdded: () => void): HTMLElement {
   return el(
     "div",
     { className: "panel" },
-    el("strong", { textContent: "즐겨찾기에 추가" }),
+    el("strong", { textContent: "북마크에 추가" }),
     el("label", {}, "제목", titleInput),
     el("label", {}, "폴더", folderSelect),
     status,

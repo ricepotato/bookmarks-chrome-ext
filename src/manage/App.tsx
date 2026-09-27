@@ -31,14 +31,14 @@ import {
   moveThumbnails,
   notifyThumbnailsChanged,
 } from "../thumbnails";
-import { moveThumbnailsInDrive } from "../drive";
+import { isDriveConfigured, moveThumbnailsInDrive } from "../drive";
 import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
 /** 왼쪽 메뉴. 북마크 목록이 기본 화면이고, 나머지는 자주 쓰는 순서로 둔다. */
 const MENU = [
   { id: "list", label: "북마크 목록" },
   { id: "add", label: "북마크 추가" },
-  { id: "capture", label: "미리보기 설정" },
+  { id: "capture", label: "스크린샷 설정" },
   { id: "duplicates", label: "중복 제거" },
   { id: "domain", label: "도메인 일괄 수정" },
   { id: "backup", label: "백업" },
@@ -451,7 +451,8 @@ export default function App() {
           <section className="page" hidden={page !== "backup"}>
             <h2>백업</h2>
             <FileBackup />
-            <DriveSync />
+            {/* Google Drive 백업은 보류된 기능이라 켜고 빌드한 경우에만 보인다. */}
+            {isDriveConfigured() && <DriveSync />}
           </section>
         </main>
       </div>

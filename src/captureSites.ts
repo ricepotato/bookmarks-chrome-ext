@@ -1,5 +1,5 @@
 // 화면 캡처 대상 사이트 목록. 이 목록에 있는 도메인(하위 도메인 포함)의 북마크만
-// 썸네일을 캡처한다. 사이트마다 "현재 사이트 즐겨찾기에 추가하기" 버튼을 페이지에
+// 썸네일을 캡처한다. 사이트마다 "현재 사이트 북마크에 추가하기" 버튼을 페이지에
 // 띄울지와 그 위치도 정한다. 서비스 워커, 관리 페이지, content script가
 // chrome.storage.local로 공유한다.
 
@@ -23,7 +23,7 @@ export const BUTTON_POSITIONS: { value: ButtonPosition; label: string }[] = [
 
 export interface CaptureSite {
   domain: string;
-  /** 이 사이트 페이지에 "현재 사이트 즐겨찾기에 추가하기" 버튼을 띄울지 */
+  /** 이 사이트 페이지에 "현재 사이트 북마크에 추가하기" 버튼을 띄울지 */
   showAddButton: boolean;
   /** 버튼을 띄울 화면 모서리 */
   buttonPosition: ButtonPosition;
@@ -101,7 +101,7 @@ export function isCaptureTarget(
 }
 
 /**
- * 이 주소의 페이지에 즐겨찾기 버튼을 띄울 위치. 띄우지 않으면 null.
+ * 이 주소의 페이지에 북마크 버튼을 띄울 위치. 띄우지 않으면 null.
  * 목록에 있는 사이트는 "모든 사이트" 여부와 관계없이 그 사이트의 설정을 따르고,
  * 목록에 없는 사이트는 "모든 사이트"가 켜져 있을 때만 기본 위치에 띄운다.
  */
