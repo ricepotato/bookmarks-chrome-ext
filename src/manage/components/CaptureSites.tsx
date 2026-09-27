@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import {
+  BUTTON_POSITIONS,
   CAPTURE_SITES_KEY,
   getCaptureSites,
+  newCaptureSite,
   normalizeSiteInput,
+  parseCaptureSites,
   setCaptureSites,
+  type ButtonPosition,
+  type CaptureSite,
 } from "../../captureSites";
 
 export default function CaptureSites() {
-  const [sites, setSites] = useState<string[] | null>(null);
+  const [sites, setSites] = useState<CaptureSite[] | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -16,14 +21,14 @@ export default function CaptureSites() {
     // 다른 관리 페이지 탭에서 목록을 바꿔도 반영한다.
     const handleChange = (changes: Record<string, chrome.storage.StorageChange>) => {
       if (changes[CAPTURE_SITES_KEY]) {
-        setSites(changes[CAPTURE_SITES_KEY].newValue ?? []);
+        setSites(parseCaptureSites(changes[CAPTURE_SITES_KEY].newValue));
       }
     };
     chrome.storage.local.onChanged.addListener(handleChange);
     return () => chrome.storage.local.onChanged.removeListener(handleChange);
   }, []);
 
-  const save = async (next: string[]) => {
+  const save = async (next: CaptureSite[]) => {
     setError(null);
     try {
       await setCaptureSites(next);
@@ -41,17 +46,24 @@ export default function CaptureSites() {
       setError(`올바르지 않은 도메인 형식입니다: "${input.trim()}"`);
       return;
     }
-    if (sites.includes(site)) {
+    if (sites.some((s) => s.domain === site)) {
       setError(`이미 목록에 있습니다: ${site}`);
       return;
     }
-    await save([...sites, site].sort());
+    await save(
+      [...sites, newCaptureSite(site)].sort((a, b) => a.domain.localeCompare(b.domain)),
+    );
     setInput("");
   };
 
-  const handleRemove = (site: string) => {
+  const handleRemove = (domain: string) => {
     if (!sites) return;
-    save(sites.filter((s) => s !== site));
+    save(sites.filter((s) => s.domain !== domain));
+  };
+
+  const handleUpdate = (domain: string, changes: Partial<CaptureSite>) => {
+    if (!sites) return;
+    save(sites.map((s) => (s.domain === domain ? { ...s, ...changes } : s)));
   };
 
   if (!sites) return null;
@@ -63,7 +75,9 @@ export default function CaptureSites() {
       </h2>
       <p className="hint">
         이 목록에 있는 도메인(하위 도메인 포함)의 북마크만 방문할 때 화면을 캡처해 썸네일로
-        저장합니다. 목록에 없는 사이트는 캡처하지 않습니다.
+        저장합니다. 목록에 없는 사이트는 캡처하지 않습니다. "추가 버튼 표시"를 켜면 그
+        사이트를 보고 있을 때 화면 모서리에 "즐겨찾기에 추가" 버튼이 나타나고, 누르면 저장할
+        폴더를 골라 현재 페이지를 추가할 수 있습니다.
       </p>
 
       <form className="drive-row" onSubmit={handleAdd}>
@@ -86,9 +100,35 @@ export default function CaptureSites() {
       ) : (
         <ul className="capture-site-list">
           {sites.map((site) => (
-            <li key={site}>
-              <span>{site}</span>
-              <button onClick={() => handleRemove(site)}>삭제</button>
+            <li key={site.domain}>
+              <span className="capture-site-domain">{site.domain}</span>
+              <label className="capture-site-option">
+                <input
+                  type="checkbox"
+                  checked={site.showAddButton}
+                  onChange={(e) =>
+                    handleUpdate(site.domain, { showAddButton: e.target.checked })
+                  }
+                />
+                추가 버튼 표시
+              </label>
+              <select
+                value={site.buttonPosition}
+                disabled={!site.showAddButton}
+                aria-label="버튼 위치"
+                onChange={(e) =>
+                  handleUpdate(site.domain, {
+                    buttonPosition: e.target.value as ButtonPosition,
+                  })
+                }
+              >
+                {BUTTON_POSITIONS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => handleRemove(site.domain)}>삭제</button>
             </li>
           ))}
         </ul>

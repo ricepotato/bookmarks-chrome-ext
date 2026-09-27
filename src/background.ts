@@ -1,4 +1,9 @@
-import { loadBookmarksBarFlat, normalizeUrlForDedup } from "./manage/bookmarks";
+import {
+  createBookmark,
+  loadBookmarksBarFlat,
+  loadFolderOptions,
+  normalizeUrlForDedup,
+} from "./manage/bookmarks";
 import {
   THUMBNAIL_UPDATED,
   getThumbnail,
@@ -6,13 +11,68 @@ import {
   type ThumbnailUpdatedMessage,
 } from "./thumbnails";
 import { syncThumbnailToDrive } from "./drive";
-import { getCaptureSites, isCaptureTarget } from "./captureSites";
+import {
+  ADD_CURRENT_PAGE_BOOKMARK,
+  GET_BOOKMARK_FOLDERS,
+  getCaptureSites,
+  isCaptureTarget,
+  type AddCurrentPageBookmarkMessage,
+  type AddCurrentPageBookmarkResult,
+  type BookmarkMessageResponse,
+  type GetBookmarkFoldersMessage,
+} from "./captureSites";
 
 // 서비스 워커: 확장 아이콘 클릭 시 관리 페이지를 새 탭으로 연다.
 // action.default_popup을 지정하지 않았기 때문에 onClicked가 정상적으로 동작한다.
 chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage();
 });
+
+// ---- "현재 사이트 즐겨찾기에 추가하기" 버튼 ----
+// content script는 chrome.bookmarks를 쓸 수 없으므로 폴더 목록 조회와 북마크 추가를 대신한다.
+chrome.runtime.onMessage.addListener(
+  (
+    message: GetBookmarkFoldersMessage | AddCurrentPageBookmarkMessage,
+    sender,
+    sendResponse: (response: BookmarkMessageResponse<unknown>) => void,
+  ) => {
+    let task: Promise<unknown>;
+    if (message?.type === GET_BOOKMARK_FOLDERS) {
+      task = loadFolderOptions();
+    } else if (message?.type === ADD_CURRENT_PAGE_BOOKMARK) {
+      task = addPageBookmark(message, sender.tab);
+    } else {
+      return false;
+    }
+    task
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch((e) =>
+        sendResponse({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+      );
+    return true; // 비동기로 응답한다.
+  },
+);
+
+/**
+ * 버튼으로 요청한 페이지를 북마크에 추가하고, 지금 보이는 화면을 그 북마크의 썸네일로 저장한다.
+ * content script는 요청을 보내기 전에 버튼/선택 창을 숨겨 두므로 캡처에 찍히지 않는다.
+ * 캡처에 실패해도 북마크 추가는 성공으로 보고, 실패 사유만 함께 돌려준다.
+ */
+async function addPageBookmark(
+  { parentId, title, url }: AddCurrentPageBookmarkMessage,
+  tab: chrome.tabs.Tab | undefined,
+): Promise<AddCurrentPageBookmarkResult> {
+  await createBookmark({ parentId, title: title || url, url });
+  try {
+    if (!tab?.id) throw new Error("탭 정보를 알 수 없습니다.");
+    const blob = await captureTab(tab.windowId);
+    await saveThumbnail([normalizeUrlForDedup(url)], blob, url);
+    return { captured: true };
+  } catch (e) {
+    console.warn("[thumbnail] 즐겨찾기 추가 중 캡처 실패:", e);
+    return { captured: false, captureError: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 // ---- 썸네일 자동 캡처 ----
 // 북마크된 사이트의 로딩이 끝나면 화면을 캡처해 썸네일로 저장한다.
@@ -155,17 +215,36 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
   const latest = await getVisit(tabId);
   if (!current.active || latest?.seq !== visit.seq) return;
 
-  const dataUrl = await chrome.tabs.captureVisibleTab(current.windowId, {
+  const blob = await captureTab(current.windowId);
+  await saveThumbnail(keys, blob, current.url);
+
+  // 한 번 찍은 뒤에는 같은 탭에서 사이트 안을 돌아다닌 화면이 북마크 썸네일을
+  // 덮어쓰지 않도록 방문 정보를 비운다.
+  await chrome.storage.session.set({
+    [visitKey(tabId)]: { keys: [], seq: visit.seq } satisfies TabVisit,
+  });
+}
+
+/** 창에 보이는 탭 화면을 찍어 썸네일 크기로 줄인다. */
+async function captureTab(windowId: number): Promise<Blob> {
+  const dataUrl = await chrome.tabs.captureVisibleTab(windowId, {
     format: "jpeg",
     quality: 90,
   });
-  const blob = await resize(dataUrl);
-  const capturedAt = Date.now();
+  return resize(dataUrl);
+}
 
+/** 찍은 화면을 북마크 키들의 썸네일로 저장하고, 관리 페이지 알림과 Drive 백업까지 처리한다. */
+async function saveThumbnail(
+  keys: string[],
+  blob: Blob,
+  sourceUrl: string | undefined,
+): Promise<void> {
+  const capturedAt = Date.now();
   for (const key of keys) {
     const record = { blob, capturedAt };
     await putThumbnail(key, record);
-    console.log("[thumbnail] 저장 완료:", key, "←", current.url);
+    console.log("[thumbnail] 저장 완료:", key, "←", sourceUrl);
     const message: ThumbnailUpdatedMessage = { type: THUMBNAIL_UPDATED, key };
     // 관리 페이지가 열려 있지 않으면 받는 쪽이 없어 실패하므로 무시한다.
     chrome.runtime.sendMessage(message).catch(() => {});
@@ -176,12 +255,6 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
       .then((ok) => ok && console.log("[drive] 업로드 완료:", key))
       .catch((e) => console.warn("[drive] 업로드 실패:", key, e));
   }
-
-  // 한 번 찍은 뒤에는 같은 탭에서 사이트 안을 돌아다닌 화면이 북마크 썸네일을
-  // 덮어쓰지 않도록 방문 정보를 비운다.
-  await chrome.storage.session.set({
-    [visitKey(tabId)]: { keys: [], seq: visit.seq } satisfies TabVisit,
-  });
 }
 
 /**
