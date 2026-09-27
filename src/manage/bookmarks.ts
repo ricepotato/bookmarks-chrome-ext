@@ -137,6 +137,15 @@ export async function createBookmark(params: {
   await chrome.bookmarks.create(params);
 }
 
+/** parentId 폴더의 맨 앞에 새 폴더를 만든다. */
+export async function createFolder(params: {
+  parentId: string;
+  title: string;
+}): Promise<void> {
+  // url 없이 만들면 폴더가 된다.
+  await chrome.bookmarks.create({ ...params, index: 0 });
+}
+
 /**
  * 중복 판정용 URL 키. 스킴/호스트 대소문자 차이와 끝의 "/" 유무는 같은 주소로 본다.
  * (예: "HTTPS://Example.com/" 와 "https://example.com" 은 같은 키)

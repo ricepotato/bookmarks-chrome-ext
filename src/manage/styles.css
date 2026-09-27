@@ -213,6 +213,13 @@ button:disabled {
   min-width: 180px;
 }
 
+/* 한 페이지 안의 두 번째 이후 기능을 구분선으로 나눈다. */
+.page-subsection {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
 .bulk-editor-fields {
   display: flex;
   gap: 16px;

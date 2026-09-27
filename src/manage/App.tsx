@@ -3,6 +3,7 @@ import type { BookmarkFolder, FlatBookmark, FolderOption } from "./types";
 import {
   BOOKMARKS_BAR_ID,
   createBookmark,
+  createFolder,
   loadBookmarkFolders,
   loadBookmarksBarFlat,
   loadFolderOptions,
@@ -17,6 +18,7 @@ import BookmarkGrid from "./components/BookmarkGrid";
 import BookmarkEditDialog from "./components/BookmarkEditDialog";
 import FolderEditDialog from "./components/FolderEditDialog";
 import AddBookmarkForm from "./components/AddBookmarkForm";
+import AddFolderForm from "./components/AddFolderForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
@@ -242,6 +244,11 @@ export default function App() {
     await reload();
   };
 
+  const handleAddFolder = async (params: { parentId: string; title: string }) => {
+    await createFolder(params);
+    await reload();
+  };
+
   const handleBulkApply = async (
     changes: { id: string; url: string }[],
   ): Promise<BulkApplyResult> => {
@@ -372,6 +379,10 @@ export default function App() {
           <section className="page" hidden={page !== "add"}>
             <h2>북마크 추가</h2>
             <AddBookmarkForm folders={folders} onAdd={handleAdd} />
+
+            <h2 className="page-subsection">폴더 추가</h2>
+            <p className="hint">새 폴더는 선택한 위치의 맨 앞에 만들어집니다.</p>
+            <AddFolderForm folders={folders} onAdd={handleAddFolder} />
           </section>
 
           <section className="page" hidden={page !== "capture"}>
