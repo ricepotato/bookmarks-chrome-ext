@@ -64,6 +64,17 @@ function usePage(): PageId {
 
 export default function App() {
   const page = usePage();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // 메뉴가 열려 있을 때 Esc를 누르면 닫는다.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [menuOpen]);
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
   const [folders, setFolders] = useState<FolderOption[]>([]);
   const [folderTree, setFolderTree] = useState<BookmarkFolder[]>([]);
@@ -289,19 +300,49 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <h1>북마크 관리</h1>
-        <span className="hint">대상 범위: 북마크 바 (하위 폴더 포함)</span>
-      </header>
+      {/* 메뉴는 평소에는 왼쪽에 접혀 있고, 왼쪽 위의 떠 있는 버튼으로 열고 닫는다. */}
+      <button
+        className="menu-toggle"
+        onClick={() => setMenuOpen((open) => !open)}
+        aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
+        aria-expanded={menuOpen}
+        aria-controls="sidebar"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          {menuOpen ? (
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          ) : (
+            <path
+              d="M4 7h16M4 12h16M4 17h16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          )}
+        </svg>
+      </button>
+
+      {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
 
       <div className="layout">
-        <nav className="sidebar" aria-label="메뉴">
+        <nav
+          id="sidebar"
+          className={menuOpen ? "sidebar open" : "sidebar"}
+          aria-label="메뉴"
+        >
           {MENU.map((item) => (
             <a
               key={item.id}
               href={`#${item.id}`}
               className={item.id === page ? "sidebar-item active" : "sidebar-item"}
               aria-current={item.id === page ? "page" : undefined}
+              // 메뉴를 고르면 닫고 가운데 화면만 보이게 한다.
+              onClick={() => setMenuOpen(false)}
             >
               {item.label}
             </a>
