@@ -22,7 +22,36 @@ import { moveThumbnails, notifyThumbnailsChanged } from "../thumbnails";
 import { moveThumbnailsInDrive } from "../drive";
 import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
+/** 왼쪽 메뉴. 북마크 목록이 기본 화면이고, 나머지는 자주 쓰는 순서로 둔다. */
+const MENU = [
+  { id: "list", label: "북마크 목록" },
+  { id: "add", label: "북마크 추가" },
+  { id: "capture", label: "화면 캡처 대상 사이트" },
+  { id: "duplicates", label: "중복 제거" },
+  { id: "domain", label: "도메인 일괄 수정" },
+  { id: "drive", label: "Google Drive 백업" },
+] as const;
+
+type PageId = (typeof MENU)[number]["id"];
+
+/** 주소의 #해시로 현재 페이지를 정한다. 새로고침하거나 뒤로 가기를 해도 유지된다. */
+function pageFromHash(): PageId {
+  const id = location.hash.slice(1);
+  return MENU.find((m) => m.id === id)?.id ?? "list";
+}
+
+function usePage(): PageId {
+  const [page, setPage] = useState(pageFromHash);
+  useEffect(() => {
+    const handleChange = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", handleChange);
+    return () => window.removeEventListener("hashchange", handleChange);
+  }, []);
+  return page;
+}
+
 export default function App() {
+  const page = usePage();
   const [bookmarks, setBookmarks] = useState<FlatBookmark[]>([]);
   const [folders, setFolders] = useState<FolderOption[]>([]);
   const [folderTree, setFolderTree] = useState<BookmarkFolder[]>([]);
@@ -190,95 +219,114 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
+      <header className="topbar">
         <h1>북마크 관리</h1>
-        <p className="hint">대상 범위: 북마크 바 (하위 폴더 포함)</p>
+        <span className="hint">대상 범위: 북마크 바 (하위 폴더 포함)</span>
       </header>
 
-      {loadError && (
-        <div className="field-error">
-          목록을 불러오지 못했습니다: {loadError}
-        </div>
-      )}
-
-      <section>
-        <h2>새 북마크 추가</h2>
-        <AddBookmarkForm folders={folders} onAdd={handleAdd} />
-      </section>
-
-      <section>
-        <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
-      </section>
-
-      <section>
-        <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
-      </section>
-
-      <section>
-        <CaptureSites />
-      </section>
-
-      <section>
-        <DriveSync />
-      </section>
-
-      <section>
-        <div className="list-header">
-          <h2>
-            북마크 목록{" "}
-            <span className="count">
-              {searching
-                ? `(검색 결과 ${visibleBookmarks.length}/${bookmarks.length})`
-                : `(전체 ${bookmarks.length})`}
-            </span>
-          </h2>
-          <input
-            className="search-box"
-            type="text"
-            placeholder="제목, 주소, 폴더로 검색"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-
-        {!searching && (
-          <nav className="breadcrumb" aria-label="폴더 경로">
-            <button
-              className="breadcrumb-item"
-              onClick={() => setCurrentFolderId(BOOKMARKS_BAR_ID)}
-              disabled={currentFolderId === BOOKMARKS_BAR_ID}
+      <div className="layout">
+        <nav className="sidebar" aria-label="메뉴">
+          {MENU.map((item) => (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              className={item.id === page ? "sidebar-item active" : "sidebar-item"}
+              aria-current={item.id === page ? "page" : undefined}
             >
-              북마크 바
-            </button>
-            {breadcrumb.map((f) => (
-              <span key={f.id}>
-                <span className="breadcrumb-sep">›</span>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <main className="content">
+          {loadError && (
+            <div className="field-error">
+              목록을 불러오지 못했습니다: {loadError}
+            </div>
+          )}
+
+          {/* 페이지를 옮겨도 입력 중인 값이나 진행 중인 작업이 사라지지 않도록
+              모든 페이지를 그려 두고 현재 페이지만 보여준다. */}
+          <section className="page" hidden={page !== "list"}>
+            <div className="list-header">
+              <h2>
+                북마크 목록{" "}
+                <span className="count">
+                  {searching
+                    ? `(검색 결과 ${visibleBookmarks.length}/${bookmarks.length})`
+                    : `(전체 ${bookmarks.length})`}
+                </span>
+              </h2>
+              <input
+                className="search-box"
+                type="text"
+                placeholder="제목, 주소, 폴더로 검색"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+
+            {!searching && (
+              <nav className="breadcrumb" aria-label="폴더 경로">
                 <button
                   className="breadcrumb-item"
-                  onClick={() => setCurrentFolderId(f.id)}
-                  disabled={f.id === currentFolderId}
+                  onClick={() => setCurrentFolderId(BOOKMARKS_BAR_ID)}
+                  disabled={currentFolderId === BOOKMARKS_BAR_ID}
                 >
-                  {f.title || "(이름 없음)"}
+                  북마크 바
                 </button>
-              </span>
-            ))}
-          </nav>
-        )}
+                {breadcrumb.map((f) => (
+                  <span key={f.id}>
+                    <span className="breadcrumb-sep">›</span>
+                    <button
+                      className="breadcrumb-item"
+                      onClick={() => setCurrentFolderId(f.id)}
+                      disabled={f.id === currentFolderId}
+                    >
+                      {f.title || "(이름 없음)"}
+                    </button>
+                  </span>
+                ))}
+              </nav>
+            )}
 
-        {loading ? (
-          <p>불러오는 중...</p>
-        ) : (
-          <BookmarkGrid
-            folders={visibleFolders}
-            bookmarks={visibleBookmarks}
-            folderCounts={folderCounts}
-            thumbnails={thumbnails}
-            showPath={searching}
-            onOpenFolder={setCurrentFolderId}
-            onEdit={(b) => setEditingId(b.id)}
-          />
-        )}
-      </section>
+            {loading ? (
+              <p>불러오는 중...</p>
+            ) : (
+              <BookmarkGrid
+                folders={visibleFolders}
+                bookmarks={visibleBookmarks}
+                folderCounts={folderCounts}
+                thumbnails={thumbnails}
+                showPath={searching}
+                onOpenFolder={setCurrentFolderId}
+                onEdit={(b) => setEditingId(b.id)}
+              />
+            )}
+          </section>
+
+          <section className="page" hidden={page !== "add"}>
+            <h2>북마크 추가</h2>
+            <AddBookmarkForm folders={folders} onAdd={handleAdd} />
+          </section>
+
+          <section className="page" hidden={page !== "capture"}>
+            <CaptureSites />
+          </section>
+
+          <section className="page" hidden={page !== "duplicates"}>
+            <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
+          </section>
+
+          <section className="page" hidden={page !== "domain"}>
+            <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
+          </section>
+
+          <section className="page" hidden={page !== "drive"}>
+            <DriveSync />
+          </section>
+        </main>
+      </div>
 
       {editing && (
         <BookmarkEditDialog

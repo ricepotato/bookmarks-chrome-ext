@@ -88,7 +88,7 @@ export default function DuplicateFinder({ bookmarks, onDelete }: Props) {
         {open ? (
           <button onClick={() => setOpen(false)}>닫기</button>
         ) : (
-          <button onClick={handleOpen}>중복 제거</button>
+          <button onClick={handleOpen}>중복 제거 북마크 찾기</button>
         )}
       </div>
       <p className="hint">
