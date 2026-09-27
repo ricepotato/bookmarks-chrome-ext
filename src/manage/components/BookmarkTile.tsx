@@ -15,6 +15,12 @@ interface Props {
 /** 마우스를 잠깐 올려두었을 때만 크게 보여주기 위한 지연 시간 */
 const PREVIEW_DELAY_MS = 1000;
 
+/**
+ * 지금 떠 있는 확대 미리보기를 닫는 함수. 확대 이미지는 한 번에 하나만 보이도록,
+ * 다른 타일에 마우스를 올리는 즉시 기존 미리보기를 닫는 데 쓴다.
+ */
+let closeActivePreview: (() => void) | null = null;
+
 export default function BookmarkTile({
   bookmark,
   thumbnailUrl,
@@ -33,12 +39,17 @@ export default function BookmarkTile({
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+    // 다른 타일의 확대 이미지가 남아 있으면 (이 타일에 썸네일이 없더라도) 바로 닫는다.
+    closeActivePreview?.();
+    closeActivePreview = null;
     if (!thumbnailUrl) return;
     const tile = e.currentTarget;
-    timerRef.current = window.setTimeout(
-      () => setPreviewAnchor(tile.getBoundingClientRect()),
-      PREVIEW_DELAY_MS,
-    );
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      closeActivePreview?.();
+      closeActivePreview = hidePreview;
+      setPreviewAnchor(tile.getBoundingClientRect());
+    }, PREVIEW_DELAY_MS);
   };
 
   // 스크롤하면 미리보기 위치가 타일과 어긋나므로 닫는다.
@@ -63,7 +74,8 @@ export default function BookmarkTile({
         className="tile-link"
         href={bookmark.url}
         onClick={handleOpen}
-        title={`${label}\n${bookmark.url}`}
+        // 캡처 이미지가 있으면 툴팁 대신 미리보기 이미지 아래에 같은 내용을 보여준다.
+        title={thumbnailUrl ? undefined : `${label}\n${bookmark.url}`}
       >
         <div className="tile-thumb">
           {thumbnailUrl ? (
@@ -96,7 +108,12 @@ export default function BookmarkTile({
         편집
       </button>
       {previewAnchor && thumbnailUrl && (
-        <ThumbnailPreview src={thumbnailUrl} anchor={previewAnchor} />
+        <ThumbnailPreview
+          src={thumbnailUrl}
+          anchor={previewAnchor}
+          title={label}
+          url={bookmark.url}
+        />
       )}
     </div>
   );

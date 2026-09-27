@@ -447,13 +447,43 @@ button.tile-folder:hover:not(:disabled) {
   background: var(--bg);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .thumb-preview img {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   object-fit: contain;
   display: block;
+}
+
+.thumb-preview-caption {
+  flex: none;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.thumb-preview-title,
+.thumb-preview-url {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.thumb-preview-title {
+  font-weight: 600;
+}
+
+.thumb-preview-url {
+  color: var(--muted);
 }
 
 .drive-row {
