@@ -309,6 +309,13 @@ button:disabled {
   font-size: 13px;
 }
 
+.list-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .search-box {
   min-width: 240px;
 }

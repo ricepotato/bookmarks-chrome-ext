@@ -17,6 +17,7 @@ import {
 import BookmarkGrid from "./components/BookmarkGrid";
 import BookmarkEditDialog from "./components/BookmarkEditDialog";
 import FolderEditDialog from "./components/FolderEditDialog";
+import NewFolderDialog from "./components/NewFolderDialog";
 import AddBookmarkForm from "./components/AddBookmarkForm";
 import AddFolderForm from "./components/AddFolderForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
@@ -69,6 +70,7 @@ export default function App() {
   const [currentFolderId, setCurrentFolderId] = useState(BOOKMARKS_BAR_ID);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [creatingFolder, setCreatingFolder] = useState(false);
   const thumbnails = useThumbnails();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -325,13 +327,19 @@ export default function App() {
                     : `(전체 ${bookmarks.length})`}
                 </span>
               </h2>
-              <input
-                className="search-box"
-                type="text"
-                placeholder="제목, 주소, 폴더로 검색"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+              <div className="list-actions">
+                {/* 검색 중에는 "지금 보고 있는 폴더"가 없으므로 숨긴다. */}
+                {!searching && (
+                  <button onClick={() => setCreatingFolder(true)}>+ 새 폴더</button>
+                )}
+                <input
+                  className="search-box"
+                  type="text"
+                  placeholder="제목, 주소, 폴더로 검색"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
             </div>
 
             {!searching && (
@@ -404,6 +412,17 @@ export default function App() {
           </section>
         </main>
       </div>
+
+      {creatingFolder && (
+        <NewFolderDialog
+          locationLabel={["북마크 바", ...breadcrumb.map((f) => f.title || "(이름 없음)")].join(
+            " > ",
+          )}
+          // 지금 보고 있는 폴더의 맨 앞에 만든다.
+          onCreate={(title) => handleAddFolder({ parentId: currentFolderId, title })}
+          onClose={() => setCreatingFolder(false)}
+        />
+      )}
 
       {editingFolder && (
         <FolderEditDialog
