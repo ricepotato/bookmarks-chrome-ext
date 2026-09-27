@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- 16px용 단순화한 아이콘 (작은 크기에서 세부가 뭉개지지 않도록 모양을 줄였다) -->
+  <rect x="0" y="0" width="16" height="16" rx="3.5" fill="#2563eb"/>
+  <rect x="2" y="4.5" width="12" height="9" rx="1.5" fill="#ffffff"/>
+  <path d="M3 12.5 L6.5 8.5 L9 11 L10.5 9.5 L13 12.5 Z" fill="#60a5fa"/>
+  <path d="M9 1.5 H13 V8 L11 6.5 L9 8 Z" fill="#f59e0b"/>
+</svg>

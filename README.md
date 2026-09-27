@@ -28,6 +28,12 @@ npm run dev
 `chrome://extensions`에서 새로고침 버튼을 누르면 반영됩니다
 (HMR로 대부분 자동 반영되지만 background/manifest 변경 시에는 수동 새로고침이 필요할 수 있습니다).
 
+## 아이콘
+
+확장 아이콘의 원본은 `assets/icon.svg`(32·48·128px용)와 `assets/icon-small.svg`(16px용, 작은 크기에서
+뭉개지지 않도록 단순화)입니다. `public/icons/icon-{16,32,48,128}.png`는 이 SVG를 해당 크기의 PNG로
+렌더링한 것이며(Chrome 확장 아이콘은 PNG만 지원), 원본을 고치면 PNG도 다시 만들어 교체해야 합니다.
+
 ## Google Drive 백업 설정 (선택)
 
 썸네일을 내 Google Drive의 지정한 폴더에도 저장하려면 OAuth 클라이언트 ID가 필요합니다.

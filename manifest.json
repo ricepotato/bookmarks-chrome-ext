@@ -3,8 +3,18 @@
   "name": "북마크 매니저",
   "version": "0.1.0",
   "description": "북마크 바의 즐겨찾기를 목록으로 보고 편집/삭제/추가하고, 도메인을 일괄 변경합니다.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
-    "default_title": "북마크 관리 열기"
+    "default_title": "북마크 관리 열기",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
   },
   "background": {
     "service_worker": "src/background.ts",
