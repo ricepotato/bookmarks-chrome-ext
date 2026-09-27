@@ -86,7 +86,7 @@ export default function DriveSync() {
   if (!configured) {
     return (
       <div>
-        <h2>Google Drive 백업</h2>
+        <h3>Google Drive 백업</h3>
         <p className="hint">
           OAuth 클라이언트 ID가 설정되지 않았습니다. <code>.env.local</code>에{" "}
           <code>GOOGLE_OAUTH_CLIENT_ID</code>를 넣고 다시 빌드하세요. (README 참고)
@@ -99,7 +99,7 @@ export default function DriveSync() {
 
   return (
     <div className="drive-sync">
-      <h2>Google Drive 백업</h2>
+      <h3>Google Drive 백업</h3>
       <p className="hint">
         썸네일을 캡처할 때마다 내 Google Drive의 지정한 폴더에도 저장합니다. 이 확장은
         자신이 만든 폴더와 파일에만 접근할 수 있습니다.

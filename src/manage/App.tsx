@@ -16,6 +16,7 @@ import AddBookmarkForm from "./components/AddBookmarkForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
+import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
 import { useThumbnails } from "./useThumbnails";
 import { moveThumbnails, notifyThumbnailsChanged } from "../thumbnails";
@@ -29,7 +30,7 @@ const MENU = [
   { id: "capture", label: "미리보기 설정" },
   { id: "duplicates", label: "중복 제거" },
   { id: "domain", label: "도메인 일괄 수정" },
-  { id: "drive", label: "Google Drive 백업" },
+  { id: "backup", label: "백업" },
 ] as const;
 
 type PageId = (typeof MENU)[number]["id"];
@@ -322,7 +323,9 @@ export default function App() {
             <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
           </section>
 
-          <section className="page" hidden={page !== "drive"}>
+          <section className="page" hidden={page !== "backup"}>
+            <h2>백업</h2>
+            <FileBackup />
             <DriveSync />
           </section>
         </main>

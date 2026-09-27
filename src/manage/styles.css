@@ -150,6 +150,18 @@ h2 {
   margin-bottom: 8px;
 }
 
+h3 {
+  font-size: 14px;
+  margin: 20px 0 6px;
+}
+
+/* 한 페이지에 여러 백업 방법이 있을 때 구분선으로 나눈다. */
+.file-backup + * {
+  margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 input[type="text"],
 select {
   padding: 6px 8px;
