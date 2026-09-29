@@ -31,6 +31,43 @@ chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage();
 });
 
+// ---- "북마크에 추가" 버튼 콘텐츠 스크립트: 허용된 출처에만 동적으로 등록 ----
+// manifest에는 host_permissions을 고정으로 넣지 않고(optional_host_permissions만 선언),
+// 사용자가 스크린샷 설정에서 실제로 허용한 출처(사이트별 권한 또는 "모든 사이트")에만
+// chrome.scripting으로 이 스크립트를 등록한다. 권한이 하나도 없으면 아무 페이지에도
+// 실행되지 않는다.
+const CONTENT_SCRIPT_ID = "bookmarkshot-content";
+
+async function syncNow(): Promise<void> {
+  const { origins = [] } = await chrome.permissions.getAll();
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  } catch {
+    // 아직 등록된 적이 없으면 실패하는데, 무시해도 된다.
+  }
+  if (origins.length === 0) return;
+  await chrome.scripting.registerContentScripts([
+    { id: CONTENT_SCRIPT_ID, js: ["content.js"], matches: origins },
+  ]);
+}
+
+// 여러 이벤트가 겹쳐 들어와도(설치+시작 등) unregister/register가 서로 끼어들지 않도록
+// 한 번에 하나씩만 실행되게 줄 세운다.
+let syncChain: Promise<void> = Promise.resolve();
+function queueSync(): void {
+  syncChain = syncChain
+    .catch(() => {})
+    .then(syncNow)
+    .catch((e) => console.error("[content-script] 등록 동기화 실패:", e));
+}
+
+chrome.permissions.onAdded.addListener(queueSync);
+chrome.permissions.onRemoved.addListener(queueSync);
+chrome.runtime.onInstalled.addListener(queueSync);
+chrome.runtime.onStartup.addListener(queueSync);
+// 서비스 워커가 다른 이유로 깨어났을 때도 등록 상태가 실제 권한과 어긋나지 않도록 맞춰 둔다.
+queueSync();
+
 // ---- "현재 사이트 북마크에 추가하기" 버튼 ----
 // content script는 chrome.bookmarks를 쓸 수 없으므로 폴더 목록 조회, 북마크 여부 확인,
 // 북마크 추가, 화면 다시 캡처를 대신한다.
