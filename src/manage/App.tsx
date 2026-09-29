@@ -38,8 +38,8 @@ import type { BulkApplyResult } from "./components/BulkDomainEditor";
 /** 왼쪽 메뉴에는 북마크 목록과 설정만 둔다. 나머지 기능은 설정 안의 탭으로 옮긴다. */
 const MENU = [
   { id: "list", label: "북마크 목록" },
-  { id: "faq", label: "FAQ" },
   { id: "settings", label: "설정" },
+  { id: "faq", label: "FAQ" },
 ] as const;
 
 /** 설정 안의 탭들. 예전에는 왼쪽 메뉴에 바로 있던 항목들이다. */
@@ -51,7 +51,9 @@ const SETTINGS_MENU = [
   { id: "backup", label: "스냅샷 백업" },
 ] as const;
 
-type PageId = (typeof MENU)[number]["id"] | (typeof SETTINGS_MENU)[number]["id"];
+type PageId =
+  | (typeof MENU)[number]["id"]
+  | (typeof SETTINGS_MENU)[number]["id"];
 type SettingsPageId = (typeof SETTINGS_MENU)[number]["id"];
 
 const ALL_PAGE_IDS: PageId[] = [
@@ -203,7 +205,9 @@ export default function App() {
     ? bookmarks.find((b) => b.id === editingId)
     : undefined;
 
-  const editingFolder = editingFolderId ? folderById.get(editingFolderId) : undefined;
+  const editingFolder = editingFolderId
+    ? folderById.get(editingFolderId)
+    : undefined;
 
   /** 편집 중인 폴더와 그 하위 폴더 id. 자기 자신 안으로는 옮길 수 없으므로 위치 목록에서 뺀다. */
   const editingFolderSubtree = useMemo(() => {
@@ -276,7 +280,10 @@ export default function App() {
     await reload();
   };
 
-  const handleAddFolder = async (params: { parentId: string; title: string }) => {
+  const handleAddFolder = async (params: {
+    parentId: string;
+    title: string;
+  }) => {
     await createFolder(params);
     await reload();
   };
@@ -301,7 +308,12 @@ export default function App() {
     const moves = changes.flatMap((c) => {
       const oldUrl = oldUrlById.get(c.id);
       return oldUrl
-        ? [{ from: normalizeUrlForDedup(oldUrl), to: normalizeUrlForDedup(c.url) }]
+        ? [
+            {
+              from: normalizeUrlForDedup(oldUrl),
+              to: normalizeUrlForDedup(c.url),
+            },
+          ]
         : [];
     });
     const moved = await moveThumbnails(moves, keep);
@@ -346,7 +358,9 @@ export default function App() {
         </svg>
       </button>
 
-      {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
+      {menuOpen && (
+        <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />
+      )}
 
       <div className="layout">
         <nav
@@ -357,7 +371,8 @@ export default function App() {
           {MENU.map((item) => {
             // "설정"은 하위 탭(add/capture/...) 중 하나를 보고 있을 때도 활성 표시한다.
             const active =
-              item.id === page || (item.id === "settings" && isSettingsPage(page));
+              item.id === page ||
+              (item.id === "settings" && isSettingsPage(page));
             return (
               <a
                 key={item.id}
@@ -395,7 +410,10 @@ export default function App() {
               <div className="list-actions">
                 {/* 검색 중에는 "지금 보고 있는 폴더"가 없으므로 숨긴다. */}
                 {!searching && (
-                  <button className="btn-primary" onClick={() => setCreatingFolder(true)}>
+                  <button
+                    className="btn-primary"
+                    onClick={() => setCreatingFolder(true)}
+                  >
                     + 새 폴더
                   </button>
                 )}
@@ -455,7 +473,10 @@ export default function App() {
             <Faq />
           </section>
 
-          <section className="page page-settings" hidden={!isSettingsPage(page)}>
+          <section
+            className="page page-settings"
+            hidden={!isSettingsPage(page)}
+          >
             <nav className="settings-tabs" aria-label="설정 메뉴">
               {SETTINGS_MENU.map((item) => (
                 <a
@@ -476,7 +497,9 @@ export default function App() {
               <AddBookmarkForm folders={folders} onAdd={handleAdd} />
 
               <h2 className="page-subsection">폴더 추가</h2>
-              <p className="hint">새 폴더는 선택한 위치의 맨 앞에 만들어집니다.</p>
+              <p className="hint">
+                새 폴더는 선택한 위치의 맨 앞에 만들어집니다.
+              </p>
               <AddFolderForm folders={folders} onAdd={handleAddFolder} />
             </div>
 
@@ -485,11 +508,17 @@ export default function App() {
             </div>
 
             <div className="page" hidden={page !== "duplicates"}>
-              <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
+              <DuplicateFinder
+                bookmarks={bookmarks}
+                onDelete={handleDeleteMany}
+              />
             </div>
 
             <div className="page" hidden={page !== "domain"}>
-              <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
+              <BulkDomainEditor
+                bookmarks={bookmarks}
+                onApply={handleBulkApply}
+              />
             </div>
 
             <div className="page" hidden={page !== "backup"}>
@@ -497,10 +526,11 @@ export default function App() {
               <div className="storage-note">
                 <strong>북마크가 아니라 스냅샷 이미지를 백업합니다</strong>
                 <p>
-                  여기서 백업하는 것은 <b>북마크 항목(제목·주소·폴더) 자체가 아니라</b>,
-                  북마크를 방문할 때 찍어 둔 <b>스냅샷 이미지(썸네일)</b>입니다. 북마크
-                  목록은 Chrome 북마크 동기화로 이미 관리되고 있으니, 이 기능은 그 북마크에
-                  딸린 화면 캡처 이미지만 내보내고 불러옵니다.
+                  여기서 백업하는 것은{" "}
+                  <b>북마크 항목(제목·주소·폴더) 자체가 아니라</b>, 북마크를
+                  방문할 때 찍어 둔 <b>스냅샷 이미지(썸네일)</b>입니다. 북마크
+                  목록은 Chrome 북마크 동기화로 이미 관리되고 있으니, 이 기능은
+                  그 북마크에 딸린 화면 캡처 이미지만 내보내고 불러옵니다.
                 </p>
               </div>
               <FileBackup />
@@ -513,11 +543,14 @@ export default function App() {
 
       {creatingFolder && (
         <NewFolderDialog
-          locationLabel={["북마크 바", ...breadcrumb.map((f) => f.title || "(이름 없음)")].join(
-            " > ",
-          )}
+          locationLabel={[
+            "북마크 바",
+            ...breadcrumb.map((f) => f.title || "(이름 없음)"),
+          ].join(" > ")}
           // 지금 보고 있는 폴더의 맨 앞에 만든다.
-          onCreate={(title) => handleAddFolder({ parentId: currentFolderId, title })}
+          onCreate={(title) =>
+            handleAddFolder({ parentId: currentFolderId, title })
+          }
           onClose={() => setCreatingFolder(false)}
         />
       )}

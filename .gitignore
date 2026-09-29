@@ -4,3 +4,4 @@ dist-ssr
 *.local
 *.tsbuildinfo
 .claude/settings.local.json
+*.zip
