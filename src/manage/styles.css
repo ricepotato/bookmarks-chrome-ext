@@ -149,6 +149,40 @@ body {
   display: none;
 }
 
+/* ---- 설정 안의 탭 메뉴 (예전에는 왼쪽 메뉴에 바로 있던 항목들) ---- */
+
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-tab {
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-tab:hover {
+  background: var(--tile-bg);
+  color: var(--fg);
+}
+
+.settings-tab.active {
+  background: var(--thumb-bg);
+  color: var(--accent);
+}
+
+.page-settings .page-subsection {
+  margin-top: 32px;
+}
+
 /* 화면이 좁아 가운데 내용의 왼쪽 여백이 메뉴 버튼보다 좁으면, 버튼과 겹치지 않도록 내용을 내린다. */
 @media (max-width: 1200px) {
   .content {

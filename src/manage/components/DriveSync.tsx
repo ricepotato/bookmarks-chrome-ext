@@ -101,8 +101,9 @@ export default function DriveSync() {
     <div className="drive-sync">
       <h3>Google Drive 백업</h3>
       <p className="hint">
-        썸네일을 캡처할 때마다 내 Google Drive의 지정한 폴더에도 저장합니다. 이 확장은
-        자신이 만든 폴더와 파일에만 접근할 수 있습니다.
+        북마크 스냅샷 이미지(썸네일)를 캡처할 때마다 내 Google Drive의 지정한 폴더에도
+        저장합니다. 북마크 자체는 여기에 올라가지 않습니다. 이 확장은 자신이 만든 폴더와
+        파일에만 접근할 수 있습니다.
       </p>
 
       {!settings.enabled ? (

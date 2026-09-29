@@ -34,22 +34,39 @@ import {
 import { isDriveConfigured, moveThumbnailsInDrive } from "../drive";
 import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
-/** 왼쪽 메뉴. 북마크 목록이 기본 화면이고, 나머지는 자주 쓰는 순서로 둔다. */
+/** 왼쪽 메뉴에는 북마크 목록과 설정만 둔다. 나머지 기능은 설정 안의 탭으로 옮긴다. */
 const MENU = [
   { id: "list", label: "북마크 목록" },
+  { id: "settings", label: "설정" },
+] as const;
+
+/** 설정 안의 탭들. 예전에는 왼쪽 메뉴에 바로 있던 항목들이다. */
+const SETTINGS_MENU = [
   { id: "add", label: "북마크 추가" },
   { id: "capture", label: "스크린샷 설정" },
   { id: "duplicates", label: "중복 제거" },
   { id: "domain", label: "도메인 일괄 수정" },
-  { id: "backup", label: "백업" },
+  { id: "backup", label: "스냅샷 백업" },
 ] as const;
 
-type PageId = (typeof MENU)[number]["id"];
+type PageId = (typeof MENU)[number]["id"] | (typeof SETTINGS_MENU)[number]["id"];
+type SettingsPageId = (typeof SETTINGS_MENU)[number]["id"];
 
-/** 주소의 #해시로 현재 페이지를 정한다. 새로고침하거나 뒤로 가기를 해도 유지된다. */
+const ALL_PAGE_IDS: PageId[] = [
+  ...MENU.map((m) => m.id),
+  ...SETTINGS_MENU.map((m) => m.id),
+];
+
+function isSettingsPage(id: PageId): id is SettingsPageId {
+  return SETTINGS_MENU.some((m) => m.id === id);
+}
+
+/** 주소의 #해시로 현재 페이지를 정한다. 새로고침하거나 뒤로 가기를 해도 유지된다.
+    "settings"는 실제 화면이 아니라 설정의 첫 탭으로 보낸다. */
 function pageFromHash(): PageId {
   const id = location.hash.slice(1);
-  return MENU.find((m) => m.id === id)?.id ?? "list";
+  if (id === "settings") return SETTINGS_MENU[0].id;
+  return (ALL_PAGE_IDS as string[]).includes(id) ? (id as PageId) : "list";
 }
 
 function usePage(): PageId {
@@ -335,18 +352,23 @@ export default function App() {
           className={menuOpen ? "sidebar open" : "sidebar"}
           aria-label="메뉴"
         >
-          {MENU.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              className={item.id === page ? "sidebar-item active" : "sidebar-item"}
-              aria-current={item.id === page ? "page" : undefined}
-              // 메뉴를 고르면 닫고 가운데 화면만 보이게 한다.
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </a>
-          ))}
+          {MENU.map((item) => {
+            // "설정"은 하위 탭(add/capture/...) 중 하나를 보고 있을 때도 활성 표시한다.
+            const active =
+              item.id === page || (item.id === "settings" && isSettingsPage(page));
+            return (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className={active ? "sidebar-item active" : "sidebar-item"}
+                aria-current={active ? "page" : undefined}
+                // 메뉴를 고르면 닫고 가운데 화면만 보이게 한다.
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
 
         <main className="content">
@@ -427,32 +449,58 @@ export default function App() {
             )}
           </section>
 
-          <section className="page" hidden={page !== "add"}>
-            <h2>북마크 추가</h2>
-            <AddBookmarkForm folders={folders} onAdd={handleAdd} />
+          <section className="page page-settings" hidden={!isSettingsPage(page)}>
+            <nav className="settings-tabs" aria-label="설정 메뉴">
+              {SETTINGS_MENU.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={
+                    item.id === page ? "settings-tab active" : "settings-tab"
+                  }
+                  aria-current={item.id === page ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
 
-            <h2 className="page-subsection">폴더 추가</h2>
-            <p className="hint">새 폴더는 선택한 위치의 맨 앞에 만들어집니다.</p>
-            <AddFolderForm folders={folders} onAdd={handleAddFolder} />
-          </section>
+            <div className="page" hidden={page !== "add"}>
+              <h2>북마크 추가</h2>
+              <AddBookmarkForm folders={folders} onAdd={handleAdd} />
 
-          <section className="page" hidden={page !== "capture"}>
-            <CaptureSites />
-          </section>
+              <h2 className="page-subsection">폴더 추가</h2>
+              <p className="hint">새 폴더는 선택한 위치의 맨 앞에 만들어집니다.</p>
+              <AddFolderForm folders={folders} onAdd={handleAddFolder} />
+            </div>
 
-          <section className="page" hidden={page !== "duplicates"}>
-            <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
-          </section>
+            <div className="page" hidden={page !== "capture"}>
+              <CaptureSites />
+            </div>
 
-          <section className="page" hidden={page !== "domain"}>
-            <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
-          </section>
+            <div className="page" hidden={page !== "duplicates"}>
+              <DuplicateFinder bookmarks={bookmarks} onDelete={handleDeleteMany} />
+            </div>
 
-          <section className="page" hidden={page !== "backup"}>
-            <h2>백업</h2>
-            <FileBackup />
-            {/* Google Drive 백업은 보류된 기능이라 켜고 빌드한 경우에만 보인다. */}
-            {isDriveConfigured() && <DriveSync />}
+            <div className="page" hidden={page !== "domain"}>
+              <BulkDomainEditor bookmarks={bookmarks} onApply={handleBulkApply} />
+            </div>
+
+            <div className="page" hidden={page !== "backup"}>
+              <h2>백업</h2>
+              <div className="storage-note">
+                <strong>북마크가 아니라 스냅샷 이미지를 백업합니다</strong>
+                <p>
+                  여기서 백업하는 것은 <b>북마크 항목(제목·주소·폴더) 자체가 아니라</b>,
+                  북마크를 방문할 때 찍어 둔 <b>스냅샷 이미지(썸네일)</b>입니다. 북마크
+                  목록은 Chrome 북마크 동기화로 이미 관리되고 있으니, 이 기능은 그 북마크에
+                  딸린 화면 캡처 이미지만 내보내고 불러옵니다.
+                </p>
+              </div>
+              <FileBackup />
+              {/* Google Drive 백업은 보류된 기능이라 켜고 빌드한 경우에만 보인다. */}
+              {isDriveConfigured() && <DriveSync />}
+            </div>
           </section>
         </main>
       </div>
