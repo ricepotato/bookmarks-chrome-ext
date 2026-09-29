@@ -183,6 +183,45 @@ body {
   margin-top: 32px;
 }
 
+/* ---- FAQ ---- */
+
+.faq-list {
+  margin: 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 18px;
+}
+
+.faq-item + .faq-item {
+  margin-top: 10px;
+}
+
+.faq-item dt {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.faq-item dt::before {
+  content: "Q. ";
+  color: var(--accent);
+}
+
+.faq-item dd {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 /* 화면이 좁아 가운데 내용의 왼쪽 여백이 메뉴 버튼보다 좁으면, 버튼과 겹치지 않도록 내용을 내린다. */
 @media (max-width: 1200px) {
   .content {
