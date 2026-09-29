@@ -1,4 +1,4 @@
-# 북마크 매니저 (Chrome Extension)
+# 북마크샷 (Chrome Extension)
 
 북마크 바(Bookmarks Bar)의 북마크를 목록으로 보고, 제목/주소를 편집하고,
 특정 도메인을 가진 북마크를 일괄 수정하며, 추가/삭제할 수 있는 Chrome 확장 프로그램.

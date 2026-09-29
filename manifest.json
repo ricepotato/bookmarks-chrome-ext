@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "북마크 매니저",
+  "name": "북마크샷",
   "version": "0.1.0",
   "description": "북마크 바의 북마크를 목록으로 보고 편집/삭제/추가하고, 도메인을 일괄 변경합니다.",
   "icons": {
