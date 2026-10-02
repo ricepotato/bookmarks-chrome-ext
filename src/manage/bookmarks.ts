@@ -1,3 +1,4 @@
+import { getPlaceAtTop } from "../bookmarkSettings";
 import type { BookmarkFolder, FlatBookmark, FolderOption } from "./types";
 
 // Chrome 북마크 트리에서 "북마크 바" 노드의 id는 로케일에 관계없이 항상 "1" 이다.
@@ -104,7 +105,8 @@ export async function updateBookmark(
 }
 
 /**
- * 북마크나 폴더를 parentId 폴더의 index 위치로 옮긴다. index를 생략하면 맨 끝에 넣는다.
+ * 북마크나 폴더를 parentId 폴더의 index 위치로 옮긴다. index를 생략하면 "맨 위에 배치"
+ * 설정에 따라 맨 앞 또는 맨 끝에 넣는다.
  * 같은 폴더 안에서 뒤쪽으로 옮길 때도 index는 "옮기기 전" 목록 기준이다.
  * (Chrome이 자기 자신이 빠지는 만큼을 알아서 보정한다.)
  */
@@ -113,6 +115,7 @@ export async function moveBookmark(
   parentId: string,
   index?: number,
 ): Promise<void> {
+  if (index === undefined && (await getPlaceAtTop())) index = 0;
   await chrome.bookmarks.move(id, index === undefined ? { parentId } : { parentId, index });
 }
 
@@ -129,12 +132,13 @@ export async function removeFolder(id: string): Promise<void> {
   await chrome.bookmarks.removeTree(id);
 }
 
+/** parentId 폴더에 북마크를 만든다. "맨 위에 배치" 설정이 켜져 있으면 맨 앞, 아니면 맨 끝. */
 export async function createBookmark(params: {
   parentId: string;
   title: string;
   url: string;
 }): Promise<void> {
-  await chrome.bookmarks.create(params);
+  await chrome.bookmarks.create((await getPlaceAtTop()) ? { ...params, index: 0 } : params);
 }
 
 /** parentId 폴더의 맨 앞에 새 폴더를 만든다. */

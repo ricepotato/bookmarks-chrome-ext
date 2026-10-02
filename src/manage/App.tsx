@@ -25,6 +25,7 @@ import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
 import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
+import PlaceAtTopSetting from "./components/PlaceAtTopSetting";
 import Faq from "./components/Faq";
 import { useThumbnails } from "./useThumbnails";
 import {
@@ -232,7 +233,7 @@ export default function App() {
     { parentId, ...changes }: { title: string; url: string; parentId: string },
   ) => {
     await updateBookmark(id, changes);
-    // 폴더를 바꿨으면 새 폴더의 맨 끝으로 옮긴다.
+    // 폴더를 바꿨으면 새 폴더의 맨 끝(설정에 따라 맨 앞)으로 옮긴다.
     if (parentId !== bookmarks.find((b) => b.id === id)?.parentId) {
       await moveBookmark(id, parentId);
     }
@@ -245,7 +246,7 @@ export default function App() {
   ) => {
     const folder = folderById.get(id);
     if (title !== folder?.title) await renameFolder(id, title);
-    // 위치를 바꿨으면 새 폴더의 맨 끝으로 옮긴다.
+    // 위치를 바꿨으면 새 폴더의 맨 끝(설정에 따라 맨 앞)으로 옮긴다.
     if (parentId !== folder?.parentId) await moveBookmark(id, parentId);
     await reload();
   };
@@ -494,6 +495,7 @@ export default function App() {
 
             <div className="page" hidden={page !== "add"}>
               <h2>북마크 추가</h2>
+              <PlaceAtTopSetting />
               <AddBookmarkForm folders={folders} onAdd={handleAdd} />
 
               <h2 className="page-subsection">폴더 추가</h2>
