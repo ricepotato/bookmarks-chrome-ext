@@ -782,6 +782,56 @@ button.tile-folder:hover:not(:disabled) {
     var(--shadow-sm);
 }
 
+/* 여러 항목 선택 */
+.grid-area {
+  position: relative;
+  /* 타일 아래 빈 곳에서도 끌어서 선택을 시작할 수 있게 여유를 둔다. */
+  min-height: 50vh;
+  padding-bottom: 40px;
+}
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.selection-bar + .grid {
+  margin-top: 8px;
+}
+
+.tile.selected {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--shadow-sm);
+}
+
+.selection-box {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.drag-count-badge {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* 북마크를 폴더 위에 놓으면 폴더 안으로 들어간다는 것을 폴더 타일 강조로 보여준다. */
 .tile.drop-into {
   border-color: var(--accent);

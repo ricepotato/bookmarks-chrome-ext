@@ -119,6 +119,64 @@ export async function moveBookmark(
   await chrome.bookmarks.move(id, index === undefined ? { parentId } : { parentId, index });
 }
 
+/**
+ * 여러 북마크/폴더를 parentId 폴더로 한꺼번에 옮긴다. 옮기는 항목끼리의 순서는 원래 순서를
+ * 그대로 유지한다.
+ * - index가 있으면 parentId 폴더의 "옮기기 전" 목록 기준 index 자리에 이어 붙여 넣는다.
+ * - index를 생략하면 "맨 위에 배치" 설정에 따라 맨 앞 또는 맨 끝에 넣는다.
+ */
+export async function moveBookmarks(
+  ids: string[],
+  parentId: string,
+  index?: number,
+): Promise<void> {
+  const nodes = await chrome.bookmarks.get(ids);
+  // 원래 순서대로 옮긴다. (드래그로 옮기는 항목은 모두 같은 폴더에 있으므로 index 순서가 곧 화면 순서다)
+  const moving = [...nodes].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+
+  if (index === undefined) {
+    if (await getPlaceAtTop()) {
+      for (const [i, node] of moving.entries()) {
+        await chrome.bookmarks.move(node.id, { parentId, index: i });
+      }
+    } else {
+      for (const node of moving) await chrome.bookmarks.move(node.id, { parentId });
+    }
+    return;
+  }
+
+  const movingIds = new Set(moving.map((n) => n.id));
+  const children = await chrome.bookmarks.getChildren(parentId);
+  // 남는 항목들 사이에서 끼워 넣을 자리: 원래 index 자리보다 앞에 있던 남는 항목의 수
+  const remaining = children.filter((c) => !movingIds.has(c.id));
+  const insertAt = remaining.filter((c) => (c.index ?? 0) < index).length;
+  const finalOrder = [
+    ...remaining.slice(0, insertAt).map((c) => c.id),
+    ...moving.map((n) => n.id),
+    ...remaining.slice(insertAt).map((c) => c.id),
+  ];
+
+  // 다른 폴더에 있던 항목은 먼저 이 폴더로 가져온 뒤 순서를 맞춘다.
+  const childIds = new Set(children.map((c) => c.id));
+  const current = children.map((c) => c.id);
+  for (const node of moving) {
+    if (!childIds.has(node.id)) {
+      await chrome.bookmarks.move(node.id, { parentId });
+      current.push(node.id);
+    }
+  }
+
+  // 앞에서부터 자리가 다른 항목을 그 자리로 당겨 온다. 당겨 오는 항목은 항상 뒤쪽에
+  // 있으므로 Chrome의 index 보정(뒤로 옮길 때 -1)이 끼어들지 않는다.
+  for (let i = 0; i < finalOrder.length; i++) {
+    if (current[i] === finalOrder[i]) continue;
+    const from = current.indexOf(finalOrder[i]);
+    await chrome.bookmarks.move(finalOrder[i], { parentId, index: i });
+    current.splice(from, 1);
+    current.splice(i, 0, finalOrder[i]);
+  }
+}
+
 export async function removeBookmark(id: string): Promise<void> {
   await chrome.bookmarks.remove(id);
 }

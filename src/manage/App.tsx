@@ -8,6 +8,7 @@ import {
   loadBookmarksBarFlat,
   loadFolderOptions,
   moveBookmark,
+  moveBookmarks,
   normalizeUrlForDedup,
   removeBookmark,
   removeFolder,
@@ -261,8 +262,8 @@ export default function App() {
     await reload();
   };
 
-  const handleMove = async (id: string, parentId: string, index?: number) => {
-    await moveBookmark(id, parentId, index);
+  const handleMove = async (ids: string[], parentId: string, index?: number) => {
+    await moveBookmarks(ids, parentId, index);
     await reload();
   };
 
@@ -456,6 +457,8 @@ export default function App() {
               <p>불러오는 중...</p>
             ) : (
               <BookmarkGrid
+                // 다른 폴더로 가거나 검색하면 선택을 초기화한다.
+                key={searching ? "search" : currentFolderId}
                 folders={visibleFolders}
                 bookmarks={visibleBookmarks}
                 folderCounts={folderCounts}

@@ -11,9 +11,9 @@ interface Props {
   /** 검색 결과처럼 여러 폴더의 북마크가 섞여 있을 때 폴더 경로를 함께 표시한다. */
   showPath?: boolean;
   onEdit: (bookmark: FlatBookmark) => void;
-  /** 드래그 중 표시용 클래스 (dragging, drop-before, drop-after) */
+  /** 선택/드래그 표시용 클래스 (selected, dragging, drop-before, drop-after) */
   className?: string;
-  /** 순서 바꾸기용 드래그 속성. 없으면 드래그할 수 없다. */
+  /** 순서 바꾸기용 드래그 속성과 Ctrl+클릭 선택 처리. 없으면 드래그할 수 없다. */
   dragProps?: React.HTMLAttributes<HTMLElement> & { draggable?: boolean };
 }
 
