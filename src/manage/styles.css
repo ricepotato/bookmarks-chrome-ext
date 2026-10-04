@@ -13,9 +13,12 @@
   /* 카드(타일) 배경과 그 뒤 페이지 배경. 카드가 떠 보이도록 배경을 살짝 어둡게 둔다. */
   --page-bg: #f4f5f7;
   --card-bg: #ffffff;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
-  --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 14px 28px rgba(15, 23, 42, 0.14), 0 4px 10px rgba(15, 23, 42, 0.08);
+  --shadow-sm:
+    0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md:
+    0 4px 10px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.06);
+  --shadow-lg:
+    0 14px 28px rgba(15, 23, 42, 0.14), 0 4px 10px rgba(15, 23, 42, 0.08);
   /* 이미지 없는 타일의 유리 느낌 */
   --glass-top: rgba(236, 239, 243, 0.95);
   --glass-bottom: rgba(208, 213, 221, 0.85);
@@ -42,7 +45,8 @@
     --card-bg: #232323;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
+    --shadow-lg:
+      0 14px 28px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
     --glass-top: rgba(70, 74, 82, 0.55);
     --glass-bottom: rgba(38, 40, 45, 0.7);
     --glass-highlight: rgba(255, 255, 255, 0.1);
@@ -59,7 +63,8 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--page-bg);
   color: var(--fg);
 }
@@ -240,7 +245,6 @@ body {
   color: var(--muted);
   font-size: 13px;
 }
-
 
 h2 {
   font-size: 16px;
@@ -576,7 +580,7 @@ button:disabled {
 .grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 20px;
+  gap: 25px;
   margin-top: 16px;
 }
 
