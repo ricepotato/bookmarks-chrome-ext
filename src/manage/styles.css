@@ -559,9 +559,18 @@ button:disabled {
   color: var(--muted);
 }
 
-/* 북마크 목록은 6열로 넓게 보여준다. 나머지 화면은 1000px 폭을 유지한다. */
+/* 북마크 목록은 화면 전체 폭을 쓴다. 나머지 화면은 1000px 폭을 유지한다. */
 .content:has(.page-list:not([hidden])) {
+  max-width: none;
+}
+
+/* 목록 내용은 6열 기준 1440px 폭으로 가운데 두고, 그 양옆의 빈 곳도 그리드 영역에
+   포함시켜 끌어서 여러 항목을 선택하기 시작할 수 있게 한다. */
+.page-list > :not(.grid-area),
+.grid-area > :not(.selection-box) {
   max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .grid {
