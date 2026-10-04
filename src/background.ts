@@ -144,8 +144,6 @@ async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Pro
 
 /** 로딩 완료 후 렌더링(웹폰트, 이미지 등)이 자리잡을 때까지 기다리는 시간 */
 const CAPTURE_DELAY_MS = 1000;
-/** 이 시간 안에 찍은 썸네일이 있으면 다시 찍지 않는다. */
-const RECAPTURE_AFTER_MS = 60 * 60 * 1000;
 /** 저장할 이미지의 최대 가로 크기 (마우스 오버 시 크게 보여주기 위해 넉넉히) */
 const MAX_WIDTH = 1280;
 
@@ -253,17 +251,20 @@ async function captureIfBookmarked(tabId: number): Promise<void> {
   // 캡처 대상 사이트 목록에 있는 북마크만 찍는다("모든 사이트"가 켜져 있으면 모두).
   // 설정은 관리 페이지에서 언제든 바뀔 수 있으므로 방문 기록 시점이 아니라 캡처 직전에 확인한다.
   const [sites, allSites] = await Promise.all([getCaptureSites(), getCaptureAllSites()]);
-  const keys = visit.keys.filter((k) => isCaptureTarget(k, sites, allSites));
-  if (keys.length === 0) {
+  const targets = visit.keys.filter((k) => isCaptureTarget(k, sites, allSites));
+  if (targets.length === 0) {
     console.debug("[thumbnail] 캡처 대상 사이트가 아니라 건너뜀:", visit.keys);
     return;
   }
 
-  const records = await Promise.all(keys.map((k) => getThumbnail(k)));
-  const fresh = records.every(
-    (r) => r && Date.now() - r.capturedAt < RECAPTURE_AFTER_MS,
-  );
-  if (fresh) return;
+  // 이미 스크린샷이 있는 북마크는 자동으로 다시 찍지 않는다. (다시 찍으려면 페이지 위의
+  // "캡처" 버튼을 쓴다) 리다이렉트 체인에 걸린 북마크 중 스크린샷이 없는 것만 찍는다.
+  const records = await Promise.all(targets.map((k) => getThumbnail(k)));
+  const keys = targets.filter((_, i) => !records[i]);
+  if (keys.length === 0) {
+    console.debug("[thumbnail] 이미 스크린샷이 있어 건너뜀:", targets);
+    return;
+  }
 
   await new Promise((r) => setTimeout(r, CAPTURE_DELAY_MS));
 
