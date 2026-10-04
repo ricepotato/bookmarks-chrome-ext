@@ -267,6 +267,18 @@ export default function App() {
     await reload();
   };
 
+  /** 목록에서 선택한 북마크와 폴더(안의 내용 포함)를 한꺼번에 삭제한다. */
+  const handleDeleteSelected = async (ids: string[]) => {
+    try {
+      await Promise.all(
+        ids.map((id) => (folderById.has(id) ? removeFolder(id) : removeBookmark(id))),
+      );
+    } finally {
+      // 일부만 지워졌어도 화면은 실제 상태로 맞춘다.
+      await reload();
+    }
+  };
+
   const handleRemoveThumbnail = async (url: string) => {
     const key = normalizeUrlForDedup(url);
     await deleteThumbnail(key);
@@ -469,6 +481,7 @@ export default function App() {
                 onEditFolder={(f) => setEditingFolderId(f.id)}
                 // 검색 결과는 여러 폴더가 섞여 있어 순서를 바꿀 기준이 없으므로 끈다.
                 onMove={searching ? undefined : handleMove}
+                onDelete={searching ? undefined : handleDeleteSelected}
               />
             )}
           </section>

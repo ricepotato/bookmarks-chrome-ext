@@ -20,6 +20,8 @@ interface Props {
    * 넘기지 않으면(예: 검색 중) 드래그와 여러 항목 선택을 할 수 없다.
    */
   onMove?: (ids: string[], parentId: string, index?: number) => Promise<void>;
+  /** 선택한 항목을 Delete 키로 삭제할 때 (확인을 받은 뒤) 호출된다. */
+  onDelete?: (ids: string[]) => Promise<void>;
 }
 
 /**
@@ -67,6 +69,7 @@ export default function BookmarkGrid({
   onEdit,
   onEditFolder,
   onMove,
+  onDelete,
 }: Props) {
   const [dragging, setDragging] = useState<DragItems | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
@@ -86,15 +89,50 @@ export default function BookmarkGrid({
   useEffect(() => {
     if (selected.size === 0) return;
     const handleKey = (e: KeyboardEvent) => {
+      // 목록이 화면에 없거나(다른 메뉴) 편집 창이 떠 있거나 입력 칸에 쓰는 중이면 무시한다.
+      if (!areaRef.current?.offsetParent || document.querySelector("dialog[open]")) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("input, textarea, select, [contenteditable]")) return;
       if (e.key === "Escape") setSelected(new Set());
+      else if (e.key === "Delete" && onDelete) {
+        e.preventDefault();
+        deleteSelected(onDelete);
+      }
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [selected]);
+  });
 
   if (folders.length === 0 && bookmarks.length === 0) {
     return <p className="empty">표시할 북마크가 없습니다.</p>;
   }
+
+  const deleteSelected = async (remove: (ids: string[]) => Promise<void>) => {
+    const targets = visibleSelected;
+    if (targets.length === 0) return;
+    const folderTargets = folders.filter((f) => selected.has(f.id));
+    const bookmarkCount = targets.length - folderTargets.length;
+    const inside = folderTargets.reduce((sum, f) => sum + (folderCounts.get(f.id) ?? 0), 0);
+    const parts = [
+      folderTargets.length > 0 && `폴더 ${folderTargets.length}개`,
+      bookmarkCount > 0 && `북마크 ${bookmarkCount}개`,
+    ].filter(Boolean);
+    const ok = window.confirm(
+      `선택한 ${parts.join(", ")}를 삭제할까요?` +
+        (folderTargets.length > 0
+          ? `\n\n폴더 안의 북마크 ${inside}개와 하위 폴더도 모두 함께 삭제됩니다.`
+          : "") +
+        "\n되돌릴 수 없습니다.",
+    );
+    if (!ok) return;
+    try {
+      await remove(targets.map((t) => t.id));
+      setSelected(new Set());
+    } catch (err) {
+      console.error("[bookmarks] 삭제 실패:", err);
+      window.alert(`삭제하지 못한 항목이 있습니다.\n${err instanceof Error ? err.message : err}`);
+    }
+  };
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -255,6 +293,7 @@ export default function BookmarkGrid({
               <span>
                 <b>{visibleSelected.length}개 선택됨</b> · 선택한 항목을 끌어 순서를 바꾸거나
                 폴더 위에 놓아 한꺼번에 옮길 수 있습니다.
+                {onDelete && " Delete 키를 누르면 한꺼번에 삭제합니다."}
               </span>
               <button type="button" onClick={() => setSelected(new Set())}>
                 선택 해제
