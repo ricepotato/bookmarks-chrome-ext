@@ -60,7 +60,7 @@ export default function FileBackup() {
         PC나 Chrome 프로필로 옮길 때도 쓸 수 있습니다. 가져올 때 같은 주소의 이미지가 이미
         있으면 더 최근에 찍은 쪽을 남깁니다.
       </p>
-      <div className="drive-row">
+      <div className="form-row">
         <button onClick={handleExport} disabled={busy}>
           ZIP으로 내보내기
         </button>

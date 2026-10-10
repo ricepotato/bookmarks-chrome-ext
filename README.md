@@ -125,38 +125,6 @@ Chrome 웹스토어는 설치 시점에 모든 사이트에 대한 호스트 권
   함께 실행). `npm run dev`(watch 모드)는 이 파일을 자동으로 다시 빌드하지 않으므로, `content.ts`를
   고쳤다면 `npm run build`를 한 번 더 실행하세요.
 
-## 보류된 기능: Google Drive 백업
-
-스크린샷을 내 Google Drive에도 자동으로 백업하는 기능을 만들었지만, **현재는 사용하지 않을 것
-같아 기능에서 제외했습니다.** 코드(`src/drive.ts`, `src/manage/components/DriveSync.tsx` 등)는 그대로
-남아 있고, 기본 빌드에서는 꺼진 상태입니다.
-
-- 꺼져 있을 때: 백업 메뉴에 Drive 항목이 보이지 않고, 업로드·이동 등 Drive 관련 동작을 전혀 하지 않으며,
-  manifest에서 `identity` 권한과 `oauth2` 항목도 빠집니다. 화면 안내 문구에서도 Drive 언급이 사라집니다.
-- 켜져 있을 때 하던 일:
-  - Chrome의 `chrome.identity`로 Google 계정에 로그인 (Firebase 등 별도 인증 서비스 불필요).
-    권한 범위는 `drive.file`이라 이 확장이 만든 폴더/파일에만 접근
-  - 썸네일을 캡처할 때마다 내 드라이브의 지정한 폴더(기본 "Bookmark Thumbnails")에 업로드.
-    같은 주소는 같은 파일을 덮어씀 (파일 이름은 `도메인_해시.jpg`)
-  - "기존 썸네일 전체 업로드"로 아직 올라가지 않은 썸네일을 한 번에 업로드
-  - 도메인 일괄 수정 시 Drive 파일도 새 도메인 이름으로 다시 올리고 옛 파일은 삭제
-  - 이미지 제거·ZIP 가져오기는 Drive 파일을 건드리지 않음 (가져온 이미지는 "전체 업로드"로 올림)
-
-### 다시 켜는 방법
-
-1. [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트를 만들고
-   **API 및 서비스 > 라이브러리**에서 **Google Drive API**를 사용 설정
-2. **OAuth 동의 화면** 구성: 사용자 유형 "외부", 게시 상태는 "테스트"로 두고
-   **테스트 사용자**에 본인 Google 계정 추가
-3. **사용자 인증 정보 > 사용자 인증 정보 만들기 > OAuth 클라이언트 ID**
-   - 애플리케이션 유형: **Chrome 확장 프로그램**
-   - 항목 ID: `chrome://extensions`에 표시되는 이 확장의 ID
-     (압축해제 로드 시 ID는 `dist` 폴더 경로로 정해지므로 폴더를 옮기면 바뀜)
-4. `.env.example`을 `.env.local`로 복사하고 `ENABLE_DRIVE_BACKUP=true`,
-   `GOOGLE_OAUTH_CLIENT_ID`에 발급받은 ID 입력 (둘 다 있어야 켜짐)
-5. `npm run build` 후 `chrome://extensions`에서 새로고침 (`identity` 권한이 추가됨)
-6. 관리 페이지의 **백업 › Google Drive 백업**에서 로그인하면 이후 캡처되는 썸네일이 자동 업로드됨
-
 ## 스펙 확정 사항 (사용자 확인 완료)
 
 - UI는 전용 관리 페이지(새 탭)로 제공하고, 확장 아이콘 클릭 시 열림

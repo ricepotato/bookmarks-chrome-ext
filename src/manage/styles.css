@@ -937,7 +937,7 @@ button.tile-folder:hover:not(:disabled) {
   color: var(--muted);
 }
 
-.drive-row {
+.form-row {
   display: flex;
   gap: 8px;
   align-items: flex-end;
@@ -946,7 +946,7 @@ button.tile-folder:hover:not(:disabled) {
   font-size: 13px;
 }
 
-.drive-row label {
+.form-row label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -954,7 +954,7 @@ button.tile-folder:hover:not(:disabled) {
   color: var(--muted);
 }
 
-.drive-row a {
+.form-row a {
   color: var(--accent);
   padding: 6px 0;
 }
@@ -1026,6 +1026,26 @@ button.tile-folder:hover:not(:disabled) {
   margin-top: 8px;
   font-size: 14px;
   font-weight: 600;
+}
+
+/* 스크린샷 설정: "모든 사이트" 보안 경고 */
+.all-sites-warning {
+  margin: 8px 0 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-bg);
+  font-size: 13px;
+}
+
+.all-sites-warning strong {
+  color: var(--danger);
+}
+
+.all-sites-warning ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.6;
 }
 
 /* 스크린샷 설정: 이미지 저장 위치 안내 */

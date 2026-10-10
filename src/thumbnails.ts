@@ -32,8 +32,6 @@ export interface ThumbnailRecord {
   blob: Blob;
   /** 캡처 시각 (epoch ms) */
   capturedAt: number;
-  /** Google Drive에 마지막으로 업로드한 시각 (epoch ms). 올린 적 없으면 undefined */
-  driveSyncedAt?: number;
 }
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -99,24 +97,16 @@ export interface ThumbnailMove {
   to: string;
 }
 
-export interface MovedThumbnail extends ThumbnailMove {
-  /** 새 키로 저장한 기록 */
-  record: ThumbnailRecord;
-  /** 옛 키의 썸네일을 지웠는지 (다른 북마크가 아직 옛 주소를 쓰면 남겨 둔다) */
-  removedFrom: boolean;
-}
-
 /**
  * 북마크 주소가 바뀌었을 때 썸네일을 옛 키에서 새 키로 옮긴다.
  * - 새 키에 이미 썸네일이 있으면 더 최근에 찍은 쪽을 남긴다.
  * - keep에 있는 옛 키(아직 그 주소를 쓰는 북마크가 있음)는 지우지 않고 복사만 한다.
- * - Drive에는 새 키로 아직 올라가지 않았으므로 driveSyncedAt을 비운다.
  * 실제로 새 키에 저장한 항목만 돌려준다.
  */
 export async function moveThumbnails(
   moves: ThumbnailMove[],
   keep: Set<string>,
-): Promise<MovedThumbnail[]> {
+): Promise<ThumbnailMove[]> {
   const db = await openDb();
   const tx = db.transaction(STORE, "readwrite");
   const store = tx.objectStore(STORE);
@@ -126,7 +116,7 @@ export async function moveThumbnails(
     tx.onabort = () => reject(tx.error);
   });
 
-  const moved: MovedThumbnail[] = [];
+  const moved: ThumbnailMove[] = [];
   const seen = new Set<string>();
   for (const { from, to } of moves) {
     const id = `${from}\n${to}`;
@@ -136,13 +126,12 @@ export async function moveThumbnails(
     const source: ThumbnailRecord | undefined = await promisify(store.get(from));
     if (!source) continue;
     const target: ThumbnailRecord | undefined = await promisify(store.get(to));
-    const removedFrom = !keep.has(from);
-    if (removedFrom) store.delete(from);
+    if (!keep.has(from)) store.delete(from);
     if (target && target.capturedAt >= source.capturedAt) continue;
 
     const record: ThumbnailRecord = { blob: source.blob, capturedAt: source.capturedAt };
     store.put(record, to);
-    moved.push({ from, to, record, removedFrom });
+    moved.push({ from, to });
   }
 
   await done;

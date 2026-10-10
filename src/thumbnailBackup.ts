@@ -1,5 +1,5 @@
 // 썸네일 파일 백업: 저장된 썸네일을 ZIP 파일 하나로 내보내고, 그 파일에서 다시 가져온다.
-// Google Drive 백업과 달리 로그인이 필요 없고, 다른 PC/프로필로 옮길 때도 쓸 수 있다.
+// 다른 PC/프로필로 옮길 때도 쓸 수 있다.
 //
 // ZIP 구성
 //   manifest.json      { format, version, exportedAt, thumbnails: [{ key, file, capturedAt }] }
@@ -68,8 +68,6 @@ export interface ImportResult {
 /**
  * exportThumbnailsZip으로 만든 ZIP에서 썸네일을 가져온다.
  * 같은 주소의 썸네일이 이미 있으면 더 최근에 찍은 쪽을 남긴다.
- * 가져온 썸네일은 Drive에 올라가지 않은 것으로 표시되어, Drive 백업의
- * "기존 썸네일 전체 업로드"로 올릴 수 있다.
  */
 export async function importThumbnailsZip(file: File): Promise<ImportResult> {
   let entries: Record<string, Uint8Array>;

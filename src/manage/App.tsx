@@ -23,7 +23,6 @@ import AddBookmarkForm from "./components/AddBookmarkForm";
 import AddFolderForm from "./components/AddFolderForm";
 import BulkDomainEditor from "./components/BulkDomainEditor";
 import DuplicateFinder from "./components/DuplicateFinder";
-import DriveSync from "./components/DriveSync";
 import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
 import BookmarkAddSettings from "./components/BookmarkAddSettings";
@@ -35,7 +34,6 @@ import {
   moveThumbnails,
   notifyThumbnailsChanged,
 } from "../thumbnails";
-import { isDriveConfigured, moveThumbnailsInDrive } from "../drive";
 import type { BulkApplyResult } from "./components/BulkDomainEditor";
 
 /** 왼쪽 메뉴에는 북마크 목록과 설정만 둔다. 나머지 기능은 설정 안의 탭으로 옮긴다. */
@@ -351,8 +349,7 @@ export default function App() {
     notifyThumbnailsChanged(moves.flatMap((m) => [m.from, m.to]));
     await reload();
 
-    const drive = await moveThumbnailsInDrive(moved);
-    return { thumbnails: moved.length, driveFailed: drive.failed };
+    return { thumbnails: moved.length };
   };
 
   const handleDeleteMany = async (ids: string[]) => {
@@ -569,8 +566,6 @@ export default function App() {
                 </p>
               </div>
               <FileBackup />
-              {/* Google Drive 백업은 보류된 기능이라 켜고 빌드한 경우에만 보인다. */}
-              {isDriveConfigured() && <DriveSync />}
             </div>
           </section>
         </main>

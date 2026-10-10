@@ -11,7 +11,6 @@ import {
   putThumbnail,
   type ThumbnailUpdatedMessage,
 } from "./thumbnails";
-import { syncThumbnailToDrive } from "./drive";
 import {
   ADD_CURRENT_PAGE_BOOKMARK,
   GET_BOOKMARK_FOLDERS,
@@ -124,7 +123,7 @@ async function addPageBookmark(
 
 /**
  * "캡처" 버튼: 북마크된 페이지의 지금 화면을 찍어 기존 썸네일을 교체한다.
- * 같은 키로 저장하므로 로컬 썸네일은 덮어쓰고, Drive 백업도 같은 파일을 덮어쓴다.
+ * 같은 키로 저장하므로 기존 썸네일을 덮어쓴다.
  */
 async function recapturePage(url: string, tab: chrome.tabs.Tab | undefined): Promise<void> {
   const key = await bookmarkKeyFor(url);
@@ -301,7 +300,7 @@ async function captureTab(windowId: number): Promise<Blob> {
   return resize(dataUrl);
 }
 
-/** 찍은 화면을 북마크 키들의 썸네일로 저장하고, 관리 페이지 알림과 Drive 백업까지 처리한다. */
+/** 찍은 화면을 북마크 키들의 썸네일로 저장하고, 관리 페이지에 알린다. */
 async function saveThumbnail(
   keys: string[],
   blob: Blob,
@@ -309,18 +308,11 @@ async function saveThumbnail(
 ): Promise<void> {
   const capturedAt = Date.now();
   for (const key of keys) {
-    const record = { blob, capturedAt };
-    await putThumbnail(key, record);
+    await putThumbnail(key, { blob, capturedAt });
     console.log("[thumbnail] 저장 완료:", key, "←", sourceUrl);
     const message: ThumbnailUpdatedMessage = { type: THUMBNAIL_UPDATED, key };
     // 관리 페이지가 열려 있지 않으면 받는 쪽이 없어 실패하므로 무시한다.
     chrome.runtime.sendMessage(message).catch(() => {});
-
-    // Drive 백업이 켜져 있으면 업로드한다. 실패해도 로컬 썸네일은 유지되고,
-    // 관리 페이지의 "전체 업로드"로 나중에 다시 올릴 수 있다.
-    syncThumbnailToDrive(key, record)
-      .then((ok) => ok && console.log("[drive] 업로드 완료:", key))
-      .catch((e) => console.warn("[drive] 업로드 실패:", key, e));
   }
 }
 

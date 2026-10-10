@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { FlatBookmark, FolderOption } from "../types";
 import { useModalDialog } from "../useModalDialog";
-import { isDriveConfigured } from "../../drive";
 
 interface Props {
   bookmark: FlatBookmark;
@@ -80,8 +79,7 @@ export default function BookmarkEditDialog({
     if (!onRemoveThumbnail) return;
     const ok = window.confirm(
       `이 북마크의 스크린샷을 삭제할까요?\n\n${bookmark.url}\n\n` +
-        "같은 주소를 쓰는 다른 북마크의 이미지도 함께 사라집니다." +
-        (isDriveConfigured() ? " Google Drive에 백업된 파일은 지우지 않습니다." : ""),
+        "같은 주소를 쓰는 다른 북마크의 이미지도 함께 사라집니다.",
     );
     if (!ok) return;
     setSaving(true);

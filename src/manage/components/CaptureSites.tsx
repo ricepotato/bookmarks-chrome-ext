@@ -14,7 +14,6 @@ import {
   type ButtonPosition,
   type CaptureSite,
 } from "../../captureSites";
-import { isDriveConfigured } from "../../drive";
 import {
   hasAllUrlsAccess,
   hasDomainAccess,
@@ -240,8 +239,6 @@ export default function CaptureSites() {
           <li>
             확장을 삭제하면 저장된 이미지도 함께 지워집니다. 옮기거나 보관하려면 "백업" 메뉴의
             ZIP 내보내기를 쓰세요.
-            {isDriveConfigured() &&
-              " 백업 메뉴에서 Google Drive 백업을 직접 켠 경우에만 내 Drive로 업로드됩니다."}
           </li>
         </ul>
       </div>
@@ -261,6 +258,28 @@ export default function CaptureSites() {
         버튼이 나타납니다. 아래 목록에 등록한 사이트는 각자의 설정(버튼 표시 여부와 위치)을
         그대로 따릅니다.
       </p>
+      <div className="all-sites-warning" role="note">
+        <strong>⚠️ 보안 주의: 모든 사이트에 대한 접근을 허용합니다</strong>
+        <ul>
+          <li>
+            "모든 사이트"를 켜면 이 확장이 <b>방문하는 모든 사이트의 화면을 캡처할 수 있는
+            권한</b>을 갖게 됩니다. 은행, 메일, 사내 시스템처럼 민감한 정보가 보이는 페이지도
+            예외가 아닙니다.
+          </li>
+          <li>
+            실제로는 북마크에 있는 주소를 열었을 때만 캡처하지만, 권한 자체는 모든 사이트에
+            걸쳐 있으므로 꼭 필요한 경우에만 켜고, 가능하면 아래 목록에 필요한 사이트만
+            추가해 쓰는 것을 권장합니다.
+          </li>
+          <li>
+            이 확장은 캡처한 이미지를 <b>외부 서버로 전송하지 않습니다.</b> 모든 스크린샷은 이
+            기기의 Chrome 프로필 안에만 저장됩니다.
+          </li>
+          <li>
+            언제든 체크를 끄면 모든 사이트 접근 권한이 즉시 반납됩니다.
+          </li>
+        </ul>
+      </div>
       {allSites && !allUrlsGranted && (
         <p className="field-error">
           "모든 사이트"가 켜져 있지만 접근 권한이 없어 동작하지 않습니다.{" "}
@@ -270,7 +289,7 @@ export default function CaptureSites() {
         </p>
       )}
 
-      <form className="drive-row" onSubmit={handleAdd}>
+      <form className="form-row" onSubmit={handleAdd}>
         <label>
           도메인 또는 주소
           <input
