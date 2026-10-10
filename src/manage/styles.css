@@ -959,6 +959,30 @@ button.tile-folder:hover:not(:disabled) {
   padding: 6px 0;
 }
 
+/* 스크린샷 설정: 상단의 도메인 추가 입력창 */
+.capture-add-form {
+  display: flex;
+  gap: 8px;
+  max-width: 640px;
+  margin: 12px 0 0;
+}
+
+.capture-add-form input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.capture-add-form input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
 .capture-site-list {
   list-style: none;
   padding: 0;

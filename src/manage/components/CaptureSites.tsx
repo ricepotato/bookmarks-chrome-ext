@@ -169,140 +169,20 @@ export default function CaptureSites() {
         폴더를 골라 현재 페이지를 추가할 수 있습니다.
       </p>
 
-      <div className="storage-note">
-        <strong>사이트별로 접근 권한을 따로 허용합니다</strong>
-        <ul>
-          <li>
-            도메인을 추가하거나 "모든 사이트"를 켤 때, Chrome이 그 사이트에 대한 접근 허용
-            여부를 따로 묻습니다. 허용해야 그 사이트에서 캡처와 "북마크에 추가" 버튼이
-            동작합니다.
-          </li>
-          <li>
-            권한을 허용하지 않았거나 나중에 취소한 사이트는 목록에 <b>"권한 필요"</b>로
-            표시되며, 옆의 <b>권한 허용</b> 버튼으로 언제든 다시 허용할 수 있습니다.
-          </li>
-          <li>
-            이렇게 사이트 단위로만 접근을 허용하므로, 이 확장이 목록에 없는 사이트의 화면을
-            들여다보는 일은 없습니다.
-          </li>
-        </ul>
-      </div>
-
-      <div className="storage-note">
-        <strong>캡처는 언제 되나요?</strong>
-        <ul>
-          <li>
-            <b>북마크에 있는 주소를 열었을 때만</b> 자동으로 캡처합니다. (북마크 바와 그 하위
-            폴더 기준. 기타 북마크·모바일 북마크는 제외) 북마크에 없는 사이트는 처음 들어간
-            사이트든 전에 가 본 사이트든 캡처하지 않습니다.
-          </li>
-          <li>
-            주소는 페이지 단위로 일치해야 합니다. <code>example.com</code>이 북마크되어 있어도{" "}
-            <code>example.com/news</code>는 캡처하지 않습니다. 북마크 주소가 다른 주소로
-            이동(리다이렉트)되는 경우에는 최종 화면을 그 북마크의 이미지로 저장합니다.
-          </li>
-          <li>
-            그 사이트가 아래 목록에 있거나 "모든 사이트"가 켜져 있어야 합니다. (그리고 위의
-            접근 권한도 허용되어 있어야 합니다.)
-          </li>
-          <li>
-            페이지 로딩이 끝나고 약 1초 뒤, 탭이 화면에 보일 때 찍습니다. 뒤에서 열린 탭은 그
-            탭으로 전환할 때 찍습니다. <b>이미 스크린샷이 있는 북마크는 다시 찍지 않습니다.</b> 한 번
-            찍은 뒤 같은 탭에서 사이트 안을 돌아다녀도 이미지를 덮어쓰지 않습니다.
-          </li>
-          <li>
-            페이지 위의 <b>"북마크에 추가"</b> 버튼으로 북마크를 추가하면 그 순간의 화면을
-            캡처합니다. 처음 들어간 사이트도 이 방법으로 캡처할 수 있습니다. 이미 북마크된
-            페이지는 <b>"캡처"</b> 버튼으로 언제든 다시 찍을 수 있습니다.
-          </li>
-        </ul>
-      </div>
-
-      <div className="storage-note">
-        <strong>스크린샷은 어디에 저장되나요?</strong>
-        <ul>
-          <li>
-            캡처한 이미지는 외부 서버로 전송되지 않으며, <b>이 기기의 현재 Chrome 프로필</b>에만
-            저장됩니다. 같은 계정이라도 다른 기기나 다른 프로필과는 동기화되지 않습니다.
-          </li>
-          <li>
-            저장 위치는 Chrome 프로필 폴더 안의 이 확장 전용 데이터베이스(IndexedDB)입니다.
-            <br />
-            예) Windows:{" "}
-            <code>
-              %LOCALAPPDATA%\Google\Chrome\User Data\Default\IndexedDB\chrome-extension_
-              {chrome.runtime.id}_0.indexeddb.leveldb
-            </code>
-            <br />
-            (다른 프로필을 쓰면 <code>Default</code> 대신 <code>Profile 1</code> 같은 폴더명)
-          </li>
-          <li>
-            확장을 삭제하면 저장된 이미지도 함께 지워집니다. 옮기거나 보관하려면 "백업" 메뉴의
-            ZIP 내보내기를 쓰세요.
-          </li>
-        </ul>
-      </div>
-
-      <label className="capture-all-sites">
+      <form className="capture-add-form" onSubmit={handleAdd}>
         <input
-          type="checkbox"
-          checked={allSites}
-          onChange={(e) => handleAllSitesChange(e.target.checked)}
+          type="text"
+          placeholder="캡처할 도메인 또는 주소 (예: example.com)"
+          aria-label="도메인 또는 주소"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          autoFocus
         />
-        모든 사이트
-      </label>
-      <p className="hint">
-        켜면 Chrome이 모든 사이트에 대한 접근 허용을 먼저 묻고, 허용하면 목록에 없는
-        사이트(북마크에 추가된 상태여야 합니다. 북마크에 현재 사이트가 추가되지 않았다면
-        캡쳐가 동작하지 않습니다.)도 모두 캡처하며, 그 사이트들에는 {allSitesPositionLabel}에
-        버튼이 나타납니다. 아래 목록에 등록한 사이트는 각자의 설정(버튼 표시 여부와 위치)을
-        그대로 따릅니다.
-      </p>
-      <div className="all-sites-warning" role="note">
-        <strong>⚠️ 보안 주의: 모든 사이트에 대한 접근을 허용합니다</strong>
-        <ul>
-          <li>
-            "모든 사이트"를 켜면 이 확장이 <b>방문하는 모든 사이트의 화면을 캡처할 수 있는
-            권한</b>을 갖게 됩니다. 은행, 메일, 사내 시스템처럼 민감한 정보가 보이는 페이지도
-            예외가 아닙니다.
-          </li>
-          <li>
-            실제로는 북마크에 있는 주소를 열었을 때만 캡처하지만, 권한 자체는 모든 사이트에
-            걸쳐 있으므로 꼭 필요한 경우에만 켜고, 가능하면 아래 목록에 필요한 사이트만
-            추가해 쓰는 것을 권장합니다.
-          </li>
-          <li>
-            이 확장은 캡처한 이미지를 <b>외부 서버로 전송하지 않습니다.</b> 모든 스크린샷은 이
-            기기의 Chrome 프로필 안에만 저장됩니다.
-          </li>
-          <li>
-            언제든 체크를 끄면 모든 사이트 접근 권한이 즉시 반납됩니다.
-          </li>
-        </ul>
-      </div>
-      {allSites && !allUrlsGranted && (
-        <p className="field-error">
-          "모든 사이트"가 켜져 있지만 접근 권한이 없어 동작하지 않습니다.{" "}
-          <button type="button" onClick={() => handleAllSitesChange(true)}>
-            권한 허용
-          </button>
-        </p>
-      )}
-
-      <form className="form-row" onSubmit={handleAdd}>
-        <label>
-          도메인 또는 주소
-          <input
-            type="text"
-            placeholder="example.com"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-        </label>
-        <button type="submit" disabled={!input.trim()}>
+        <button type="submit" className="btn-primary" disabled={!input.trim()}>
           추가
         </button>
       </form>
+      {error && <div className="field-error">{error}</div>}
 
       {sites.length === 0 ? (
         <p className="hint">
@@ -357,7 +237,126 @@ export default function CaptureSites() {
           })}
         </ul>
       )}
-      {error && <div className="field-error">{error}</div>}
+
+      <label className="capture-all-sites">
+        <input
+          type="checkbox"
+          checked={allSites}
+          onChange={(e) => handleAllSitesChange(e.target.checked)}
+        />
+        모든 사이트
+      </label>
+      <p className="hint">
+        켜면 Chrome이 모든 사이트에 대한 접근 허용을 먼저 묻고, 허용하면 목록에 없는
+        사이트(북마크에 추가된 상태여야 합니다. 북마크에 현재 사이트가 추가되지 않았다면
+        캡쳐가 동작하지 않습니다.)도 모두 캡처하며, 그 사이트들에는 {allSitesPositionLabel}에
+        버튼이 나타납니다. 위 목록에 등록한 사이트는 각자의 설정(버튼 표시 여부와 위치)을
+        그대로 따릅니다.
+      </p>
+      <div className="all-sites-warning" role="note">
+        <strong>⚠️ 보안 주의: 모든 사이트에 대한 접근을 허용합니다</strong>
+        <ul>
+          <li>
+            "모든 사이트"를 켜면 이 확장이 <b>방문하는 모든 사이트의 화면을 캡처할 수 있는
+            권한</b>을 갖게 됩니다. 은행, 메일, 사내 시스템처럼 민감한 정보가 보이는 페이지도
+            예외가 아닙니다.
+          </li>
+          <li>
+            실제로는 북마크에 있는 주소를 열었을 때만 캡처하지만, 권한 자체는 모든 사이트에
+            걸쳐 있으므로 꼭 필요한 경우에만 켜고, 가능하면 위 목록에 필요한 사이트만
+            추가해 쓰는 것을 권장합니다.
+          </li>
+          <li>
+            이 확장은 캡처한 이미지를 <b>외부 서버로 전송하지 않습니다.</b> 모든 스크린샷은 이
+            기기의 Chrome 프로필 안에만 저장됩니다.
+          </li>
+          <li>
+            언제든 체크를 끄면 모든 사이트 접근 권한이 즉시 반납됩니다.
+          </li>
+        </ul>
+      </div>
+      {allSites && !allUrlsGranted && (
+        <p className="field-error">
+          "모든 사이트"가 켜져 있지만 접근 권한이 없어 동작하지 않습니다.{" "}
+          <button type="button" onClick={() => handleAllSitesChange(true)}>
+            권한 허용
+          </button>
+        </p>
+      )}
+
+      <div className="storage-note">
+        <strong>사이트별로 접근 권한을 따로 허용합니다</strong>
+        <ul>
+          <li>
+            도메인을 추가하거나 "모든 사이트"를 켤 때, Chrome이 그 사이트에 대한 접근 허용
+            여부를 따로 묻습니다. 허용해야 그 사이트에서 캡처와 "북마크에 추가" 버튼이
+            동작합니다.
+          </li>
+          <li>
+            권한을 허용하지 않았거나 나중에 취소한 사이트는 목록에 <b>"권한 필요"</b>로
+            표시되며, 옆의 <b>권한 허용</b> 버튼으로 언제든 다시 허용할 수 있습니다.
+          </li>
+          <li>
+            이렇게 사이트 단위로만 접근을 허용하므로, 이 확장이 목록에 없는 사이트의 화면을
+            들여다보는 일은 없습니다.
+          </li>
+        </ul>
+      </div>
+
+      <div className="storage-note">
+        <strong>캡처는 언제 되나요?</strong>
+        <ul>
+          <li>
+            <b>북마크에 있는 주소를 열었을 때만</b> 자동으로 캡처합니다. (북마크 바와 그 하위
+            폴더 기준. 기타 북마크·모바일 북마크는 제외) 북마크에 없는 사이트는 처음 들어간
+            사이트든 전에 가 본 사이트든 캡처하지 않습니다.
+          </li>
+          <li>
+            주소는 페이지 단위로 일치해야 합니다. <code>example.com</code>이 북마크되어 있어도{" "}
+            <code>example.com/news</code>는 캡처하지 않습니다. 북마크 주소가 다른 주소로
+            이동(리다이렉트)되는 경우에는 최종 화면을 그 북마크의 이미지로 저장합니다.
+          </li>
+          <li>
+            그 사이트가 위 목록에 있거나 "모든 사이트"가 켜져 있어야 합니다. (그리고 위의
+            접근 권한도 허용되어 있어야 합니다.)
+          </li>
+          <li>
+            페이지 로딩이 끝나고 약 1초 뒤, 탭이 화면에 보일 때 찍습니다. 뒤에서 열린 탭은 그
+            탭으로 전환할 때 찍습니다. <b>이미 스크린샷이 있는 북마크는 다시 찍지 않습니다.</b> 한 번
+            찍은 뒤 같은 탭에서 사이트 안을 돌아다녀도 이미지를 덮어쓰지 않습니다.
+          </li>
+          <li>
+            페이지 위의 <b>"북마크에 추가"</b> 버튼으로 북마크를 추가하면 그 순간의 화면을
+            캡처합니다. 처음 들어간 사이트도 이 방법으로 캡처할 수 있습니다. 이미 북마크된
+            페이지는 <b>"캡처"</b> 버튼으로 언제든 다시 찍을 수 있습니다.
+          </li>
+        </ul>
+      </div>
+
+      <div className="storage-note">
+        <strong>스크린샷은 어디에 저장되나요?</strong>
+        <ul>
+          <li>
+            캡처한 이미지는 외부 서버로 전송되지 않으며, <b>이 기기의 현재 Chrome 프로필</b>에만
+            저장됩니다. 같은 계정이라도 다른 기기나 다른 프로필과는 동기화되지 않습니다.
+          </li>
+          <li>
+            저장 위치는 Chrome 프로필 폴더 안의 이 확장 전용 데이터베이스(IndexedDB)입니다.
+            <br />
+            예) Windows:{" "}
+            <code>
+              %LOCALAPPDATA%\Google\Chrome\User Data\Default\IndexedDB\chrome-extension_
+              {chrome.runtime.id}_0.indexeddb.leveldb
+            </code>
+            <br />
+            (다른 프로필을 쓰면 <code>Default</code> 대신 <code>Profile 1</code> 같은 폴더명)
+          </li>
+          <li>
+            확장을 삭제하면 저장된 이미지도 함께 지워집니다. 옮기거나 보관하려면 "백업" 메뉴의
+            ZIP 내보내기를 쓰세요.
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }
