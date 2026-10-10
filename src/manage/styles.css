@@ -566,6 +566,14 @@ button:disabled {
 /* 북마크 목록은 화면 전체 폭을 쓴다. 나머지 화면은 1000px 폭을 유지한다. */
 .content:has(.page-list:not([hidden])) {
   max-width: none;
+  /* 위쪽 여백에서도 끌어서 선택을 시작하기 쉽도록 넉넉히 둔다. */
+  padding-top: 48px;
+}
+
+@media (max-width: 1200px) {
+  .content:has(.page-list:not([hidden])) {
+    padding-top: 76px;
+  }
 }
 
 /* 목록 내용은 6열 기준 1440px 폭으로 가운데 두고, 그 양옆의 빈 곳도 그리드 영역에

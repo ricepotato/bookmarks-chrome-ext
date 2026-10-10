@@ -35,6 +35,10 @@ interface Props {
  * 빈 곳에서 마우스를 끌면 사각형 안의 타일을 여러 개 선택하고, Ctrl(⌘)+클릭으로 하나씩
  * 선택을 더하거나 뺄 수 있다. 선택한 타일을 끌면 선택한 항목이 모두 함께 옮겨진다.
  */
+/** 이 요소 위에서 누르면 사각형 선택을 시작하지 않는다. (원래 동작이 있는 요소) */
+const DRAG_START_EXCLUDE =
+  ".tile, .selection-bar, .sidebar, .menu-toggle, dialog, a, button, input, select, textarea, label, [contenteditable]";
+
 type Kind = "folder" | "bookmark";
 
 interface DragItems {
@@ -106,7 +110,17 @@ export default function BookmarkGrid({
     return () => document.removeEventListener("keydown", handleKey);
   });
 
+  // 그리드 바깥의 여백에서도 끌기를 시작할 수 있도록 문서 전체에서 받는다.
+  // 처리 함수는 렌더마다 새로 만들어지므로 ref로 최신 것을 부른다.
+  const mouseDownRef = useRef<((e: MouseEvent) => void) | null>(null);
+  useEffect(() => {
+    const handle = (e: MouseEvent) => mouseDownRef.current?.(e);
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
   if (folders.length === 0 && bookmarks.length === 0) {
+    mouseDownRef.current = null;
     return <p className="empty">표시할 북마크가 없습니다.</p>;
   }
 
@@ -151,13 +165,20 @@ export default function BookmarkGrid({
     });
   };
 
-  /** 빈 곳에서 마우스를 눌러 끌면 사각형으로 여러 타일을 선택한다. */
-  const handleAreaMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  /**
+   * 빈 곳에서 마우스를 눌러 끌면 사각형으로 여러 타일을 선택한다.
+   * 그리드 영역뿐 아니라 화면 양옆·위의 여백이나 제목 줄의 빈 곳에서도 시작할 수 있다.
+   */
+  const handleAreaMouseDown = (e: MouseEvent) => {
     if (!onMove || e.button !== 0) return;
-    if ((e.target as HTMLElement).closest(".tile, .selection-bar")) return;
     const area = areaRef.current;
     const grid = gridRef.current;
-    if (!area || !grid) return;
+    // 목록이 화면에 없거나(다른 메뉴) 편집 창이 떠 있으면 무시한다.
+    if (!area || !grid || !area.offsetParent || document.querySelector("dialog[open]")) return;
+    const target = e.target as HTMLElement;
+    if (target.closest(DRAG_START_EXCLUDE)) return;
+    // 페이지 스크롤바를 누른 경우는 제외한다.
+    if (e.clientX >= document.documentElement.clientWidth) return;
     e.preventDefault(); // 끄는 동안 글자가 선택되지 않게 한다.
 
     // Ctrl/⌘/Shift를 누른 채 시작하면 기존 선택에 더한다.
@@ -208,6 +229,8 @@ export default function BookmarkGrid({
     document.addEventListener("mouseup", handleUp);
     window.addEventListener("scroll", update, true);
   };
+
+  mouseDownRef.current = handleAreaMouseDown;
 
   const endDrag = () => {
     setDragging(null);
@@ -293,7 +316,7 @@ export default function BookmarkGrid({
   };
 
   return (
-    <div className="grid-area" ref={areaRef} onMouseDown={handleAreaMouseDown}>
+    <div className="grid-area" ref={areaRef}>
       {onMove && (
         <div className="selection-bar">
           {visibleSelected.length > 0 ? (
