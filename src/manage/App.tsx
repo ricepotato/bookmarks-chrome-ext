@@ -48,8 +48,7 @@ const MENU = [
 const SETTINGS_MENU = [
   { id: "add", label: "북마크 추가" },
   { id: "capture", label: "스크린샷 설정" },
-  { id: "duplicates", label: "중복 제거" },
-  { id: "domain", label: "도메인 일괄 수정" },
+  { id: "manage", label: "북마크 관리" },
   { id: "backup", label: "스냅샷 백업" },
 ] as const;
 
@@ -72,6 +71,8 @@ function isSettingsPage(id: PageId): id is SettingsPageId {
 function pageFromHash(): PageId {
   const id = location.hash.slice(1);
   if (id === "settings") return SETTINGS_MENU[0].id;
+  // 예전에 따로 있던 "중복 제거", "도메인 일괄 수정" 탭은 "북마크 관리"로 합쳐졌다.
+  if (id === "duplicates" || id === "domain") return "manage";
   return (ALL_PAGE_IDS as string[]).includes(id) ? (id as PageId) : "list";
 }
 
@@ -525,18 +526,17 @@ export default function App() {
               <CaptureSites />
             </div>
 
-            <div className="page" hidden={page !== "duplicates"}>
+            <div className="page" hidden={page !== "manage"}>
               <DuplicateFinder
                 bookmarks={bookmarks}
                 onDelete={handleDeleteMany}
               />
-            </div>
-
-            <div className="page" hidden={page !== "domain"}>
-              <BulkDomainEditor
-                bookmarks={bookmarks}
-                onApply={handleBulkApply}
-              />
+              <div className="page-subsection">
+                <BulkDomainEditor
+                  bookmarks={bookmarks}
+                  onApply={handleBulkApply}
+                />
+              </div>
             </div>
 
             <div className="page" hidden={page !== "backup"}>
