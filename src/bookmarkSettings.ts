@@ -13,7 +13,7 @@ export async function setPlaceAtTop(atTop: boolean): Promise<void> {
 }
 
 /**
- * 켜져 있으면 컨텍스트 메뉴 "북마크 캡쳐 이미지로 사용"으로 아직 북마크에 없는 페이지를
+ * 켜져 있으면 컨텍스트 메뉴 "북마크 스크린샷으로 사용"으로 아직 북마크에 없는 페이지를
  * 추가할 때, 북마크 바 최상위에 바로 넣지 않고 페이지 위에 창을 띄워 저장할 폴더를 묻는다.
  */
 export const ASK_FOLDER_ON_IMAGE_MENU_KEY = "askFolderOnImageMenu";

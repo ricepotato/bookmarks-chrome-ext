@@ -48,7 +48,7 @@ const SETTINGS_MENU = [
   { id: "add", label: "북마크 추가" },
   { id: "capture", label: "스크린샷 설정" },
   { id: "manage", label: "북마크 관리" },
-  { id: "backup", label: "스냅샷 백업" },
+  { id: "backup", label: "스크린샷 백업" },
 ] as const;
 
 type PageId =
@@ -556,13 +556,13 @@ export default function App() {
             <div className="page" hidden={page !== "backup"}>
               <h2>백업</h2>
               <div className="storage-note">
-                <strong>북마크가 아니라 스냅샷 이미지를 백업합니다</strong>
+                <strong>북마크가 아니라 스크린샷 이미지를 백업합니다</strong>
                 <p>
                   여기서 백업하는 것은{" "}
                   <b>북마크 항목(제목·주소·폴더) 자체가 아니라</b>, 북마크를
-                  방문할 때 찍어 둔 <b>스냅샷 이미지(썸네일)</b>입니다. 북마크
+                  방문할 때 찍어 둔 <b>스크린샷 이미지</b>입니다. 북마크
                   목록은 Chrome 북마크 동기화로 이미 관리되고 있으니, 이 기능은
-                  그 북마크에 딸린 화면 캡처 이미지만 내보내고 불러옵니다.
+                  그 북마크에 딸린 스크린샷만 내보내고 불러옵니다.
                 </p>
               </div>
               <FileBackup />

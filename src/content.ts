@@ -187,7 +187,7 @@ function renderButton(position: ButtonPosition) {
     }
     captureButton.disabled = !bookmarked;
     captureButton.title = bookmarked
-      ? "현재 화면을 캡처해 이 북마크의 썸네일을 교체"
+      ? "현재 화면을 캡처해 이 북마크의 스크린샷을 교체"
       : "북마크에 추가된 페이지에서만 사용할 수 있습니다";
   };
   refreshBookmarked();
@@ -217,7 +217,7 @@ function renderButton(position: ButtonPosition) {
     try {
       await sendMessage<void>({ type: RECAPTURE_CURRENT_PAGE, url: location.href });
       await hideWhileCapturing(false);
-      showToast("화면을 캡처해 썸네일을 교체했습니다.");
+      showToast("화면을 캡처해 스크린샷을 교체했습니다.");
     } catch (e) {
       await hideWhileCapturing(false);
       showToast(`캡처하지 못했습니다: ${e instanceof Error ? e.message : e}`, true);

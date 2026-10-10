@@ -85,7 +85,7 @@ export async function importThumbnailsZip(file: File): Promise<ImportResult> {
     // 아래에서 형식 오류로 처리한다.
   }
   if (manifest?.format !== FORMAT || !Array.isArray(manifest.thumbnails)) {
-    throw new Error("이 확장에서 내보낸 썸네일 백업 파일이 아닙니다.");
+    throw new Error("이 확장에서 내보낸 스크린샷 백업 파일이 아닙니다.");
   }
   if (manifest.version > VERSION) {
     throw new Error("더 새로운 버전에서 만든 백업 파일입니다. 확장을 업데이트해 주세요.");

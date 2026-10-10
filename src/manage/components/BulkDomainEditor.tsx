@@ -61,7 +61,7 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
       const result = await onApply(changes);
       let message = `${changes.length}개 북마크를 수정했습니다.`;
       if (result.thumbnails > 0) {
-        message += ` 캡처 이미지 ${result.thumbnails}개도 새 주소로 옮겼습니다.`;
+        message += ` 스크린샷 ${result.thumbnails}개도 새 주소로 옮겼습니다.`;
       }
       setDone(message);
     } catch (e) {
@@ -77,7 +77,7 @@ export default function BulkDomainEditor({ bookmarks, onApply }: Props) {
       <p className="hint">
         북마크 바(하위 폴더 포함) 안에서 특정 도메인을 가진 북마크의 주소를 한 번에
         바꿉니다. 경로/쿼리는 그대로 유지되고 호스트(도메인) 부분만 바뀝니다. 연결된
-        캡처 이미지도 바뀐 주소로 함께 옮깁니다.
+        스크린샷도 바뀐 주소로 함께 옮깁니다.
       </p>
       <div className="bulk-editor-fields">
         <label>

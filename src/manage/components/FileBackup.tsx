@@ -55,7 +55,7 @@ export default function FileBackup() {
     <div className="file-backup">
       <h3>파일로 백업</h3>
       <p className="hint">
-        저장된 스크린샷(북마크 스냅샷 이미지)을 ZIP 파일 하나로 내보내고, 나중에 그 파일에서
+        저장된 스크린샷 이미지를 ZIP 파일 하나로 내보내고, 나중에 그 파일에서
         다시 가져올 수 있습니다. 북마크 자체는 포함되지 않습니다. 로그인이 필요 없고, 다른
         PC나 Chrome 프로필로 옮길 때도 쓸 수 있습니다. 가져올 때 같은 주소의 이미지가 이미
         있으면 더 최근에 찍은 쪽을 남깁니다.

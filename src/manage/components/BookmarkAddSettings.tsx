@@ -66,10 +66,10 @@ export default function BookmarkAddSettings() {
           checked={askFolder}
           onChange={(e) => save(setAskFolderOnImageMenu, setAskFolder, e.target.checked)}
         />
-        "북마크 캡쳐 이미지로 사용" 시 추가할 위치 선택
+        "북마크 스크린샷으로 사용" 시 추가할 위치 선택
       </label>
       <p className="hint">
-        사이트에서 이미지를 우클릭해 "북마크 캡쳐 이미지로 사용"을 눌렀을 때 그 페이지가 아직
+        사이트에서 이미지를 우클릭해 "북마크 스크린샷으로 사용"을 눌렀을 때 그 페이지가 아직
         북마크에 없으면 북마크로 추가합니다. 켜면 페이지 위에 창을 띄워 저장할 폴더(와 제목)를
         묻고, 끄면 북마크 바 최상위에 바로 추가합니다. 이미 북마크된 페이지는 묻지 않고 캡처
         이미지만 바꿉니다.

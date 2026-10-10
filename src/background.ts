@@ -360,7 +360,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: USE_IMAGE_MENU_ID,
-      title: "북마크 캡쳐 이미지로 사용",
+      title: "북마크 스크린샷으로 사용",
       contexts: ["image"],
     });
   });
@@ -383,7 +383,7 @@ async function useImageAsThumbnail(
 ): Promise<string | null> {
   const url = tab.url;
   if (!url || !/^https?:/.test(url)) {
-    throw new Error("이 페이지는 북마크 캡처 이미지를 지정할 수 없습니다.");
+    throw new Error("이 페이지는 북마크 스크린샷을 지정할 수 없습니다.");
   }
   if (!info.srcUrl) throw new Error("이미지 주소를 알 수 없습니다.");
 
@@ -420,8 +420,8 @@ async function useImageAsThumbnail(
 
   return (
     (addedTo
-      ? `"${addedTo}"에 이 페이지를 추가하고, 이 이미지를 캡처 이미지로 저장했습니다.`
-      : "이 이미지를 북마크 캡처 이미지로 저장했습니다.") +
+      ? `"${addedTo}"에 이 페이지를 추가하고, 이 이미지를 스크린샷으로 저장했습니다.`
+      : "이 이미지를 북마크 스크린샷으로 저장했습니다.") +
     (cropped ? " (이미지를 직접 받을 수 없어 화면에 보이는 부분을 잘라 저장했습니다)" : "")
   );
 }
