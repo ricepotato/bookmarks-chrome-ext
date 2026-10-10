@@ -30,7 +30,9 @@
     "storage",
     "unlimitedStorage",
     "webNavigation",
-    "scripting"
+    "scripting",
+    "contextMenus",
+    "activeTab"
   ],
   "optional_host_permissions": ["<all_urls>"]
 }

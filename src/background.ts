@@ -1,4 +1,5 @@
 import {
+  BOOKMARKS_BAR_ID,
   createBookmark,
   loadBookmarksBarFlat,
   loadFolderOptions,
@@ -228,7 +229,12 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 async function resize(dataUrl: string): Promise<Blob> {
-  const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+  return resizeBlob(await (await fetch(dataUrl)).blob());
+}
+
+/** 이미지를 썸네일 크기(가로 최대 MAX_WIDTH)의 JPEG로 줄인다. */
+async function resizeBlob(image: Blob): Promise<Blob> {
+  const bitmap = await createImageBitmap(image);
   const scale = Math.min(1, MAX_WIDTH / bitmap.width);
   const width = Math.round(bitmap.width * scale);
   const height = Math.round(bitmap.height * scale);
@@ -348,3 +354,159 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 chrome.tabs.onActivated.addListener(({ tabId }) => {
   tryCapture(tabId);
 });
+
+// ---- 컨텍스트 메뉴: "북마크 캡쳐 이미지로 사용" ----
+// 페이지의 이미지를 우클릭해 그 이미지를 현재 페이지 북마크의 썸네일로 쓴다. 페이지가 아직
+// 북마크에 없으면 북마크 바 최상위에 먼저 추가한다. 메뉴를 누르면 그 탭에 대해 activeTab
+// 권한이 생기므로, 사이트 접근 권한을 허용하지 않은 사이트에서도 동작한다.
+
+const USE_IMAGE_MENU_ID = "use-image-as-thumbnail";
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: USE_IMAGE_MENU_ID,
+      title: "북마크 캡쳐 이미지로 사용",
+      contexts: ["image"],
+    });
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== USE_IMAGE_MENU_ID || !tab?.id) return;
+  const tabId = tab.id;
+  useImageAsThumbnail(info, tab)
+    .then((message) => showPageToast(tabId, message))
+    .catch((e) => {
+      console.warn("[thumbnail] 이미지로 바꾸기 실패:", e);
+      showPageToast(tabId, e instanceof Error ? e.message : String(e), true);
+    });
+});
+
+async function useImageAsThumbnail(
+  info: chrome.contextMenus.OnClickData,
+  tab: chrome.tabs.Tab,
+): Promise<string> {
+  const url = tab.url;
+  if (!url || !/^https?:/.test(url)) {
+    throw new Error("이 페이지는 북마크 캡처 이미지를 지정할 수 없습니다.");
+  }
+  if (!info.srcUrl) throw new Error("이미지 주소를 알 수 없습니다.");
+
+  // 북마크를 추가하기 전에 이미지를 먼저 준비해, 실패하면 북마크도 만들지 않는다.
+  let blob: Blob;
+  let cropped = false;
+  try {
+    blob = await resizeBlob(await downloadImage(info.srcUrl));
+  } catch (e) {
+    // 다른 도메인의 이미지라 받을 수 없거나(CORS), SVG처럼 그릴 수 없는 형식이면
+    // 지금 화면에서 그 이미지가 보이는 부분을 잘라 쓴다.
+    console.debug("[thumbnail] 이미지를 직접 받지 못해 화면에서 잘라 씀:", info.srcUrl, e);
+    blob = await cropImageFromScreen(tab, info.frameId ?? 0, info.srcUrl);
+    cropped = true;
+  }
+
+  let key = await bookmarkKeyFor(url);
+  const added = key === null;
+  if (key === null) {
+    await createBookmark({ parentId: BOOKMARKS_BAR_ID, title: tab.title || url, url });
+    key = normalizeUrlForDedup(url);
+  }
+  await saveThumbnail([key], blob, info.srcUrl);
+
+  return (
+    (added
+      ? "북마크 바에 이 페이지를 추가하고, 이 이미지를 캡처 이미지로 저장했습니다."
+      : "이 이미지를 북마크 캡처 이미지로 저장했습니다.") +
+    (cropped ? " (이미지를 직접 받을 수 없어 화면에 보이는 부분을 잘라 저장했습니다)" : "")
+  );
+}
+
+async function downloadImage(srcUrl: string): Promise<Blob> {
+  const res = await fetch(srcUrl);
+  if (!res.ok) throw new Error(`이미지를 받지 못했습니다. (HTTP ${res.status})`);
+  const blob = await res.blob();
+  if (!blob.type.startsWith("image/")) throw new Error(`이미지가 아닙니다: ${blob.type}`);
+  return blob;
+}
+
+/** 지금 보이는 탭 화면에서 그 이미지가 있는 영역만 잘라낸다. */
+async function cropImageFromScreen(
+  tab: chrome.tabs.Tab,
+  frameId: number,
+  srcUrl: string,
+): Promise<Blob> {
+  // 프레임 안의 이미지는 화면 전체 기준 위치를 알 수 없으므로 잘라낼 수 없다.
+  if (frameId !== 0) throw new Error("이 이미지는 가져올 수 없습니다.");
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id!, frameIds: [0] },
+    args: [srcUrl],
+    func: (src: string) => {
+      // 같은 이미지가 여러 개면 화면에 가장 크게 보이는 것을 고른다.
+      let best: { left: number; top: number; right: number; bottom: number } | null = null;
+      let bestArea = 0;
+      for (const img of Array.from(document.images)) {
+        if (img.currentSrc !== src && img.src !== src) continue;
+        const r = img.getBoundingClientRect();
+        const left = Math.max(0, r.left);
+        const top = Math.max(0, r.top);
+        const right = Math.min(window.innerWidth, r.right);
+        const bottom = Math.min(window.innerHeight, r.bottom);
+        const area = Math.max(0, right - left) * Math.max(0, bottom - top);
+        if (area > bestArea) {
+          bestArea = area;
+          best = { left, top, right, bottom };
+        }
+      }
+      return best && { ...best, viewportWidth: window.innerWidth };
+    },
+  });
+  const rect = result?.result;
+  if (!rect) throw new Error("화면에서 이미지를 찾지 못했습니다. 이미지가 보이게 스크롤한 뒤 다시 시도해 주세요.");
+
+  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+  const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+  // 화면 좌표(CSS 픽셀)를 캡처 이미지 픽셀로 바꾼다. (고해상도 화면이면 2배 등)
+  const ratio = bitmap.width / rect.viewportWidth;
+  const sx = Math.round(rect.left * ratio);
+  const sy = Math.round(rect.top * ratio);
+  const sw = Math.round((rect.right - rect.left) * ratio);
+  const sh = Math.round((rect.bottom - rect.top) * ratio);
+  const canvas = new OffscreenCanvas(sw, sh);
+  canvas.getContext("2d")!.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
+  bitmap.close();
+  return resizeBlob(await canvas.convertToBlob({ type: "image/png" }));
+}
+
+/** 페이지 위에 잠깐 결과 안내를 띄운다. 띄울 수 없는 페이지면 콘솔에만 남긴다. */
+function showPageToast(tabId: number, text: string, isError = false): void {
+  chrome.scripting
+    .executeScript({
+      target: { tabId },
+      args: [text, isError],
+      func: (message: string, error: boolean) => {
+        const id = "bookmarkshot-image-toast";
+        document.getElementById(id)?.remove();
+        const el = document.createElement("div");
+        el.id = id;
+        el.textContent = message;
+        el.style.cssText = [
+          "position:fixed",
+          "left:50%",
+          "bottom:24px",
+          "transform:translateX(-50%)",
+          "z-index:2147483647",
+          "max-width:min(560px,calc(100vw - 32px))",
+          "padding:10px 16px",
+          "border-radius:10px",
+          `background:${error ? "#cf222e" : "#1f2328"}`,
+          "color:#fff",
+          "font:14px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+          "box-shadow:0 4px 16px rgba(0,0,0,0.25)",
+        ].join(";");
+        document.documentElement.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      },
+    })
+    .catch(() => console.log("[thumbnail]", text));
+}
