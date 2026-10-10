@@ -27,6 +27,7 @@ import DriveSync from "./components/DriveSync";
 import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
 import BookmarkAddSettings from "./components/BookmarkAddSettings";
+import MultiEditDialog from "./components/MultiEditDialog";
 import Faq from "./components/Faq";
 import { useThumbnails } from "./useThumbnails";
 import {
@@ -105,6 +106,8 @@ export default function App() {
   const [currentFolderId, setCurrentFolderId] = useState(BOOKMARKS_BAR_ID);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  /** 여러 항목 편집 창에서 편집 중인 항목 id (목록에서 2개 이상 선택한 상태) */
+  const [editingManyIds, setEditingManyIds] = useState<string[] | null>(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const thumbnails = useThumbnails();
   const [query, setQuery] = useState("");
@@ -212,23 +215,36 @@ export default function App() {
     ? folderById.get(editingFolderId)
     : undefined;
 
-  /** 편집 중인 폴더와 그 하위 폴더 id. 자기 자신 안으로는 옮길 수 없으므로 위치 목록에서 뺀다. */
-  const editingFolderSubtree = useMemo(() => {
-    const ids = new Set<string>();
-    if (!editingFolderId) return ids;
-    ids.add(editingFolderId);
-    for (const f of folderTree) {
-      let id: string | undefined = f.parentId;
-      while (id && id !== BOOKMARKS_BAR_ID) {
-        if (id === editingFolderId) {
-          ids.add(f.id);
-          break;
+  /** 주어진 폴더들과 그 하위 폴더 id. 폴더를 자기 자신 안으로는 옮길 수 없으므로 위치 목록에서 뺀다. */
+  const folderSubtrees = useCallback(
+    (rootIds: string[]) => {
+      const roots = new Set(rootIds.filter((id) => folderById.has(id)));
+      const ids = new Set(roots);
+      if (roots.size === 0) return ids;
+      for (const f of folderTree) {
+        let id: string | undefined = f.parentId;
+        while (id && id !== BOOKMARKS_BAR_ID) {
+          if (roots.has(id)) {
+            ids.add(f.id);
+            break;
+          }
+          id = folderById.get(id)?.parentId;
         }
-        id = folderById.get(id)?.parentId;
       }
-    }
-    return ids;
-  }, [editingFolderId, folderTree, folderById]);
+      return ids;
+    },
+    [folderTree, folderById],
+  );
+
+  const editingFolderSubtree = useMemo(
+    () => folderSubtrees(editingFolderId ? [editingFolderId] : []),
+    [editingFolderId, folderSubtrees],
+  );
+
+  const editingManySubtree = useMemo(
+    () => folderSubtrees(editingManyIds ?? []),
+    [editingManyIds, folderSubtrees],
+  );
 
   const handleSaveRow = async (
     id: string,
@@ -482,6 +498,7 @@ export default function App() {
                 onEditFolder={(f) => setEditingFolderId(f.id)}
                 // 검색 결과는 여러 폴더가 섞여 있어 순서를 바꿀 기준이 없으므로 끈다.
                 onMove={searching ? undefined : handleMove}
+                onEditMany={searching ? undefined : setEditingManyIds}
                 onDelete={searching ? undefined : handleDeleteSelected}
               />
             )}
@@ -583,6 +600,22 @@ export default function App() {
           onSave={handleSaveFolder}
           onDelete={handleDeleteFolder}
           onClose={() => setEditingFolderId(null)}
+        />
+      )}
+
+      {editingManyIds && (
+        <MultiEditDialog
+          folderCount={editingManyIds.filter((id) => folderById.has(id)).length}
+          bookmarkCount={editingManyIds.filter((id) => !folderById.has(id)).length}
+          bookmarksInFolders={editingManyIds.reduce(
+            (sum, id) => sum + (folderCounts.get(id) ?? 0),
+            0,
+          )}
+          currentParentId={currentFolderId}
+          folders={folders.filter((f) => !editingManySubtree.has(f.id))}
+          onSave={(parentId) => handleMove(editingManyIds, parentId)}
+          onDelete={() => handleDeleteSelected(editingManyIds)}
+          onClose={() => setEditingManyIds(null)}
         />
       )}
 

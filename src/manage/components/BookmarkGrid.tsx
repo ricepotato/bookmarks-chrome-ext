@@ -20,6 +20,8 @@ interface Props {
    * 넘기지 않으면(예: 검색 중) 드래그와 여러 항목 선택을 할 수 없다.
    */
   onMove?: (ids: string[], parentId: string, index?: number) => Promise<void>;
+  /** 여러 항목을 선택한 채 그중 한 타일의 "편집"을 누르면 단일 편집 대신 호출된다. */
+  onEditMany?: (ids: string[]) => void;
   /** 선택한 항목을 Delete 키로 삭제할 때 (확인을 받은 뒤) 호출된다. */
   onDelete?: (ids: string[]) => Promise<void>;
 }
@@ -69,6 +71,7 @@ export default function BookmarkGrid({
   onEdit,
   onEditFolder,
   onMove,
+  onEditMany,
   onDelete,
 }: Props) {
   const [dragging, setDragging] = useState<DragItems | null>(null);
@@ -133,6 +136,11 @@ export default function BookmarkGrid({
       window.alert(`삭제하지 못한 항목이 있습니다.\n${err instanceof Error ? err.message : err}`);
     }
   };
+
+  /** 이 타일의 "편집"을 눌렀을 때 여러 항목 편집으로 열지. (선택한 타일이고 2개 이상 선택됨) */
+  const editsMany = (id: string) =>
+    onEditMany !== undefined && selected.has(id) && visibleSelected.length > 1;
+  const editMany = () => onEditMany?.(visibleSelected.map((it) => it.id));
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -293,6 +301,7 @@ export default function BookmarkGrid({
               <span>
                 <b>{visibleSelected.length}개 선택됨</b> · 선택한 항목을 끌어 순서를 바꾸거나
                 폴더 위에 놓아 한꺼번에 옮길 수 있습니다.
+                {onEditMany && " 편집 버튼으로 저장 폴더를 바꾸거나 삭제할 수 있고,"}
                 {onDelete && " Delete 키를 누르면 한꺼번에 삭제합니다."}
               </span>
               <button type="button" onClick={() => setSelected(new Set())}>
@@ -329,7 +338,7 @@ export default function BookmarkGrid({
             </button>
             <button
               className="tile-edit"
-              onClick={() => onEditFolder(f)}
+              onClick={() => (editsMany(f.id) ? editMany() : onEditFolder(f))}
               title="편집"
               aria-label={`${f.title || "(이름 없음)"} 폴더 편집`}
             >
@@ -343,7 +352,7 @@ export default function BookmarkGrid({
             bookmark={b}
             thumbnailUrl={thumbnails.get(normalizeUrlForDedup(b.url))}
             showPath={showPath}
-            onEdit={onEdit}
+            onEdit={(bookmark) => (editsMany(bookmark.id) ? editMany() : onEdit(bookmark))}
             className={tileClass(b.id)}
             dragProps={tileProps("bookmark", b)}
           />
