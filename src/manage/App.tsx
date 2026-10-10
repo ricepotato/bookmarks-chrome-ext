@@ -26,7 +26,7 @@ import DuplicateFinder from "./components/DuplicateFinder";
 import DriveSync from "./components/DriveSync";
 import FileBackup from "./components/FileBackup";
 import CaptureSites from "./components/CaptureSites";
-import PlaceAtTopSetting from "./components/PlaceAtTopSetting";
+import BookmarkAddSettings from "./components/BookmarkAddSettings";
 import Faq from "./components/Faq";
 import { useThumbnails } from "./useThumbnails";
 import {
@@ -511,7 +511,7 @@ export default function App() {
 
             <div className="page" hidden={page !== "add"}>
               <h2>북마크 추가</h2>
-              <PlaceAtTopSetting />
+              <BookmarkAddSettings />
               <AddBookmarkForm folders={folders} onAdd={handleAdd} />
 
               <h2 className="page-subsection">폴더 추가</h2>

@@ -25,6 +25,8 @@ import {
   type BookmarkMessageResponse,
   type ContentMessage,
 } from "./captureSites";
+import { getAskFolderOnImageMenu } from "./bookmarkSettings";
+import type { FolderOption } from "./manage/types";
 
 // 서비스 워커: 확장 아이콘 클릭 시 관리 페이지를 새 탭으로 연다.
 // action.default_popup을 지정하지 않았기 때문에 onClicked가 정상적으로 동작한다.
@@ -376,7 +378,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== USE_IMAGE_MENU_ID || !tab?.id) return;
   const tabId = tab.id;
   useImageAsThumbnail(info, tab)
-    .then((message) => showPageToast(tabId, message))
+    .then((message) => message && showPageToast(tabId, message))
     .catch((e) => {
       console.warn("[thumbnail] 이미지로 바꾸기 실패:", e);
       showPageToast(tabId, e instanceof Error ? e.message : String(e), true);
@@ -386,7 +388,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function useImageAsThumbnail(
   info: chrome.contextMenus.OnClickData,
   tab: chrome.tabs.Tab,
-): Promise<string> {
+): Promise<string | null> {
   const url = tab.url;
   if (!url || !/^https?:/.test(url)) {
     throw new Error("이 페이지는 북마크 캡처 이미지를 지정할 수 없습니다.");
@@ -407,19 +409,121 @@ async function useImageAsThumbnail(
   }
 
   let key = await bookmarkKeyFor(url);
-  const added = key === null;
+  let addedTo: string | null = null;
   if (key === null) {
-    await createBookmark({ parentId: BOOKMARKS_BAR_ID, title: tab.title || url, url });
+    let target = { parentId: BOOKMARKS_BAR_ID, title: tab.title || url };
+    let folderLabel = "북마크 바";
+    if (await getAskFolderOnImageMenu()) {
+      const folders = await loadFolderOptions();
+      const picked = await askBookmarkFolder(tab.id!, folders, target.title);
+      if (!picked) return null; // 취소
+      target = picked;
+      folderLabel = folders.find((f) => f.id === picked.parentId)?.label ?? folderLabel;
+    }
+    await createBookmark({ ...target, url });
     key = normalizeUrlForDedup(url);
+    addedTo = folderLabel;
   }
   await saveThumbnail([key], blob, info.srcUrl);
 
   return (
-    (added
-      ? "북마크 바에 이 페이지를 추가하고, 이 이미지를 캡처 이미지로 저장했습니다."
+    (addedTo
+      ? `"${addedTo}"에 이 페이지를 추가하고, 이 이미지를 캡처 이미지로 저장했습니다.`
       : "이 이미지를 북마크 캡처 이미지로 저장했습니다.") +
     (cropped ? " (이미지를 직접 받을 수 없어 화면에 보이는 부분을 잘라 저장했습니다)" : "")
   );
+}
+
+/**
+ * 페이지 위에 저장할 폴더와 제목을 고르는 창을 띄우고, 고른 값을 돌려준다. 취소하면 null.
+ * 메뉴를 누를 때 생긴 activeTab 권한으로 띄우므로 사이트 접근 권한이 없어도 된다.
+ */
+async function askBookmarkFolder(
+  tabId: number,
+  folders: FolderOption[],
+  title: string,
+): Promise<{ parentId: string; title: string } | null> {
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    args: [folders, title],
+    func: (options: { id: string; label: string }[], defaultTitle: string) =>
+      new Promise<{ parentId: string; title: string } | null>((resolve) => {
+        const host = document.createElement("div");
+        const shadow = host.attachShadow({ mode: "closed" });
+        shadow.innerHTML = `
+          <style>
+            :host { all: initial; }
+            .backdrop {
+              position: fixed; inset: 0; z-index: 2147483647;
+              display: flex; align-items: center; justify-content: center;
+              background: rgba(0, 0, 0, 0.35);
+              font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+              color: #1f2328;
+            }
+            form {
+              width: min(360px, calc(100vw - 32px)); box-sizing: border-box;
+              padding: 16px; border-radius: 10px; background: #fff;
+              box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+              display: flex; flex-direction: column; gap: 10px;
+            }
+            strong { font-size: 15px; }
+            label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #59636e; }
+            input, select, button {
+              font: inherit; color: #1f2328; background: #fff;
+              border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 8px;
+            }
+            .actions { display: flex; justify-content: flex-end; gap: 8px; }
+            button { cursor: pointer; background: #f6f8fa; padding: 6px 12px; }
+            .primary { background: #0969da; border-color: #0969da; color: #fff; }
+            @media (prefers-color-scheme: dark) {
+              .backdrop { color: #e6edf3; }
+              form { background: #161b22; }
+              label { color: #9198a1; }
+              input, select, button { color: #e6edf3; background: #0d1117; border-color: #3d444d; }
+              button { background: #21262d; }
+              .primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+            }
+          </style>
+          <div class="backdrop">
+            <form>
+              <strong>북마크에 추가할 위치</strong>
+              <label>제목<input name="title" type="text"></label>
+              <label>폴더<select name="folder"></select></label>
+              <div class="actions">
+                <button type="button" class="cancel">취소</button>
+                <button type="submit" class="primary">추가</button>
+              </div>
+            </form>
+          </div>`;
+        const form = shadow.querySelector("form")!;
+        const titleInput = shadow.querySelector<HTMLInputElement>('input[name="title"]')!;
+        const select = shadow.querySelector<HTMLSelectElement>('select[name="folder"]')!;
+        titleInput.value = defaultTitle;
+        for (const o of options) select.add(new Option(o.label, o.id));
+
+        const finish = (value: { parentId: string; title: string } | null) => {
+          document.removeEventListener("keydown", onKey, true);
+          host.remove();
+          resolve(value);
+        };
+        const onKey = (e: KeyboardEvent) => {
+          if (e.key === "Escape") finish(null);
+        };
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          finish({ parentId: select.value, title: titleInput.value.trim() || defaultTitle });
+        });
+        shadow.querySelector(".cancel")!.addEventListener("click", () => finish(null));
+        // 창 바깥(어두운 배경)을 누르면 취소한다.
+        shadow.querySelector(".backdrop")!.addEventListener("click", (e) => {
+          if (e.target === e.currentTarget) finish(null);
+        });
+        document.addEventListener("keydown", onKey, true);
+        document.documentElement.appendChild(host);
+        select.focus();
+      }),
+  });
+  return (result?.result as { parentId: string; title: string } | null | undefined) ?? null;
 }
 
 async function downloadImage(srcUrl: string): Promise<Blob> {
